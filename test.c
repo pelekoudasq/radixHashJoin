@@ -27,8 +27,8 @@ relation *tableRelation(int32_t *table, int32_t columnNumber, uint32_t numOfRows
 	return R;
 }
 
-int main(int argc, char const *argv[])
-{
+int main(){
+	
 	int32_t x[10][2] = {
 		{1, 5}, 
 		{2, 54}, 
@@ -62,7 +62,7 @@ int main(int argc, char const *argv[])
 	memcpy(&test, (relX->tuples)+sizeof(int32_t)*5, sizeof(int32_t));
 	printf("%d\n", test);*/
 
-	/*tuple test/* = malloc(sizeof(tuple))*/;
+	//tuple test/* = malloc(sizeof(tuple))*/;
 	//memcpy(&test, (relX->tuples)+sizeof(tuple)*9, sizeof(tuple));
 	//printf("%d\n", test.payload);
 	
@@ -72,7 +72,7 @@ int main(int argc, char const *argv[])
 	printf("%d\n", test.payload);*/
 
 	result *res = RadixHashJoin(relX, relY);
-	printf("res\n");
+	printf("res: %p\n", res);
 	free(relX->tuples);
 	free(relX);
 
