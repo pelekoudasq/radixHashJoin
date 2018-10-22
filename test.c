@@ -8,27 +8,23 @@
 
 
 relation *tableRelation(int32_t *table, int32_t columnNumber, uint32_t numOfRows, int32_t numOfColumns){
-	printf("in function tableRelation\n");
-
+	
 	relation *R = malloc(sizeof(relation));
 	R->num_tuples = numOfRows;
 	R->tuples = malloc(numOfRows*sizeof(tuple));
-	int32_t i;
-	for (i = 0; i < numOfRows; i++){
+	for (int32_t i = 0; i < numOfRows; i++){
 
-		tuple *tempTuple = malloc(sizeof(tuple));
-		tempTuple->key = i + 1;
-		tempTuple->payload = table[i*numOfColumns+columnNumber-1];
-		memcpy(R->tuples+(i*sizeof(tuple)), tempTuple, sizeof(tuple));
-		//printf("%p, %p\n", R->tuples+(i*sizeof(tuple))+sizeof(tuple), R->tuples+(numOfRows*sizeof(tuple)));
-		//printf("%d\n", table[i*numOfColumns+columnNumber-1]);
-		free(tempTuple);
+		tuple tempTuple;
+		tempTuple.key = i + 1;
+		tempTuple.payload = table[i*numOfColumns+columnNumber-1];
+		memcpy(R->tuples+i, &tempTuple, sizeof(tuple));
 	}
 	return R;
 }
 
 int main(){
 	
+	//test table 1
 	int32_t x[10][2] = {
 		{1, 5}, 
 		{2, 54}, 
@@ -42,6 +38,7 @@ int main(){
 		{10, 43}
 	};
 
+	//test table 2
 	int32_t y[10][3] = {
 		{1, 50, 34}, 
 		{2, 51, 43}, 
@@ -55,26 +52,17 @@ int main(){
 		{10, 5, 59}
 	};
 
+	//create test relations
 	relation *relX = tableRelation(x[0], 2, 10, 2);
-	
-
-	/*int32_t test;
-	memcpy(&test, (relX->tuples)+sizeof(int32_t)*5, sizeof(int32_t));
-	printf("%d\n", test);*/
-
-	//tuple test/* = malloc(sizeof(tuple))*/;
-	//memcpy(&test, (relX->tuples)+sizeof(tuple)*9, sizeof(tuple));
-	//printf("%d\n", test.payload);
-	
 	relation *relY = tableRelation(y[0], 3, 10, 3);
 
-	/*memcpy(&test, (relX->tuples)+sizeof(tuple)*9, sizeof(tuple));
-	printf("%d\n", test.payload);*/
-
-	result *res = RadixHashJoin(relX, relY);
-	printf("res: %p\n", res);
+	RadixHashJoin(relX, relY);
+	
+	//free test relations
 	free(relX->tuples);
 	free(relX);
+	free(relY->tuples);
+	free(relY);
 
 	return 0;
 }
