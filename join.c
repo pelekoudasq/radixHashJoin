@@ -43,13 +43,11 @@ void hashRelation(relInfo* newRel, relation *rel){
 	free(sumHistogram);
 }
 
-void getBucket(relInfo relR, relInfo relS, int begR, int begS, int bucketNo){
-	//compare buckets of R and S
-	// if (relR.histogram[bucketNo] > relS.histogram[bucketNo]){
-
-	// }else{
-		
-	// }
+void getBucket(relInfo* small, relInfo* big, int begR, int begS, int bucketNo){
+	//hash small
+	
+	//join
+	
 }
 
 result* RadixHashJoin(relation *relR, relation *relS){
@@ -63,7 +61,10 @@ result* RadixHashJoin(relation *relR, relation *relS){
 
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
-		getBucket(relRhashed, relShashed, begR, begS, i);
+		if (relR.histogram[i] > relS.histogram[i])
+			getBucket(&relRhashed, &relShashed, begR, begS, i);
+		else 
+			getBucket(&relShashed, &relRhashed, begS, begR, i);
 
 		begR += relRhashed.histogram[i];
 		begS += relShashed.histogram[i];
