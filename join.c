@@ -8,86 +8,72 @@
 
 //this is the number of the n less significant bits
 #define HASH_LSB 8
+#define H1(X) (X & 0xFF)
+#define H2(A, B) ((A) / (B))
 
 int32_t twoInLSB;
 
-relInfo hashRelation(relation *rel){
-
-		
-	int32_t histogram[twoInLSB];
-	for(int32_t i = 0; i < twoInLSB; i++)
-		histogram[i] = 0;
-
+void hashRelation(relInfo* newRel, relation *rel){
+	newRel->histogram = calloc(twoInLSB, sizeof(int32_t));
 	//first run through table
 	for(int32_t i = 0; i < rel->num_tuples; i++){
-
-		//get tuple from original table
-		tuple tempTuple;
-		memcpy(&tempTuple, rel->tuples+i, sizeof(tuple));
 		//find hash position and increase histogram value by one
-		int32_t position = (tempTuple.payload)&(twoInLSB-1);
-		histogram[position]++;
+		int32_t position = rel->tuples[i].payload & (twoInLSB-1);
+		newRel->histogram[position]++;
 	}
 
 	//from histogram to summarised histogram
-	int32_t sumHistogram[twoInLSB];
+	int32_t *sumHistogram = malloc(twoInLSB * sizeof(int32_t));
 	sumHistogram[0] = 0;
-	for (int32_t i = 1; i < twoInLSB; i++)
-		sumHistogram[i] = sumHistogram[i-1] + histogram[i-1];
+	for (int i = 1; i < twoInLSB; i++)
+		sumHistogram[i] = sumHistogram[i-1] + newRel->histogram[i-1];
 
 	//second run through table, new relation table
-	relation *newRelation = malloc(sizeof(relation));
-	newRelation->num_tuples = rel->num_tuples;
-	newRelation->tuples = malloc((rel->num_tuples)*sizeof(tuple));
+	newRel->tups.num_tuples = rel->num_tuples;
+	newRel->tups.tuples = malloc((rel->num_tuples)*sizeof(tuple));
 
 	for(int32_t i = 0; i < rel->num_tuples; i++){
-		
-		//get tuple from original table
-		tuple tempTuple;
-		memcpy(&tempTuple, rel->tuples+i, sizeof(tuple));
 		//find hash position
-		int32_t position = (tempTuple.payload)&(twoInLSB-1);
+		int32_t position = (rel->tuples[i].payload)&(twoInLSB-1);
 		//copy that tuple to the new table in the right position
-		memcpy(newRelation->tuples+sumHistogram[position], &tempTuple, sizeof(tuple));
+		memcpy(newRel->tups.tuples+sumHistogram[position], &rel->tuples[i], sizeof(tuple));
 		//increase position for current hash result value
 		sumHistogram[position]++;
 	}
-
-	relInfo newRel;
-	newRel.tups = newRelation;
-	newRel.histogram = histogram;
-
-	return newRel;
+	free(sumHistogram);
 }
 
-getBucket( relInfo relR, relInfo relS. int begR, int begS){
-	
+void getBucket(relInfo relR, relInfo relS, int begR, int begS, int bucketNo){
 	//compare buckets of R and S
-	if (relRhashed.histogram[i] > relShashed.histogram[i]){
+	// if (relR.histogram[bucketNo] > relS.histogram[bucketNo]){
 
-	}
+	// }else{
+		
+	// }
 }
 
 result* RadixHashJoin(relation *relR, relation *relS){
 
-	twoInLSB = ipow(2,HASH_LSB);
+	twoInLSB = pow2(HASH_LSB);
 	
-	relInfo relRhashed = hashRelation(relR);
-	relInfo relShashed = hashRelation(relS);
+	relInfo relRhashed;
+	relInfo relShashed;
+	hashRelation(&relRhashed, relR);
+	hashRelation(&relShashed, relS);
 
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
-		getBucket(relRhashed, relShashed, begR, begS);
+		getBucket(relRhashed, relShashed, begR, begS, i);
 
 		begR += relRhashed.histogram[i];
 		begS += relShashed.histogram[i];
 	}
 
-	printf("%d, %d\n", relRhashed.tups->num_tuples, relShashed.tups->num_tuples);
+	printf("%d, %d\n", relRhashed.tups.num_tuples, relShashed.tups.num_tuples);
 
-	free(relRhashed.tups->tuples);
-	free(relRhashed.tups);
-	free(relShashed.tups->tuples);
-	free(relShashed.tups);
+	free(relRhashed.tups.tuples);
+	free(relShashed.tups.tuples);
+	free(relRhashed.histogram);
+	free(relShashed.histogram);
 	return NULL;
 }

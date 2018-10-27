@@ -13,7 +13,7 @@ typedef struct relation{
 }relation;
 
 typedef struct relInfo{
-	relation *tups;
+	relation tups;
 	int32_t *histogram;
 }relInfo;
 

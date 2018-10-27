@@ -17,3 +17,7 @@ int32_t ipow(int32_t base, int32_t exp){
 	}
 	return result;
 }
+
+int32_t pow2(int32_t exp){
+	return 1 << exp;
+}
