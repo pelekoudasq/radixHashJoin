@@ -4,30 +4,12 @@
 #include <stdint.h>
 
 #include "structs.h"
+#include "auxFun.h"
 
 //this is the number of the n less significant bits
 #define HASH_LSB 8
 
 int32_t twoInLSB;
-
-typedef struct relInfo{
-	relation *tups;
-	int32_t *histogram;
-}relInfo;
-
-int32_t ipow(int32_t base, int32_t exp){
-
-	int32_t result = 1;
-	while (exp){
-		if (exp & 1)
-			result *= base;
-		exp >>= 1;
-		base *= base;
-	}
-	return result;
-}
-
-
 
 relInfo hashRelation(relation *rel){
 
@@ -78,6 +60,14 @@ relInfo hashRelation(relation *rel){
 	return newRel;
 }
 
+getBucket( relInfo relR, relInfo relS. int begR, int begS){
+	
+	//compare buckets of R and S
+	if (relRhashed.histogram[i] > relShashed.histogram[i]){
+
+	}
+}
+
 result* RadixHashJoin(relation *relR, relation *relS){
 
 	twoInLSB = ipow(2,HASH_LSB);
@@ -85,8 +75,12 @@ result* RadixHashJoin(relation *relR, relation *relS){
 	relInfo relRhashed = hashRelation(relR);
 	relInfo relShashed = hashRelation(relS);
 
+	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
-		getBucket(relRhashed, relShashed,)
+		getBucket(relRhashed, relShashed, begR, begS);
+
+		begR += relRhashed.histogram[i];
+		begS += relShashed.histogram[i];
 	}
 
 	printf("%d, %d\n", relRhashed.tups->num_tuples, relShashed.tups->num_tuples);

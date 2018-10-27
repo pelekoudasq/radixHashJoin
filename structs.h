@@ -12,6 +12,11 @@ typedef struct relation{
 	uint32_t num_tuples;
 }relation;
 
+typedef struct relInfo{
+	relation *tups;
+	int32_t *histogram;
+}relInfo;
+
 typedef struct result{
 	void *page;
 	struct result *next;
