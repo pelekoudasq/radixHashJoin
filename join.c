@@ -43,9 +43,26 @@ void hashRelation(relInfo* newRel, relation *rel){
 	free(sumHistogram);
 }
 
-void getBucket(relInfo* small, relInfo* big, int begR, int begS, int bucketNo){
+void getBucket(relInfo* small, relInfo* big, int begSmall, int begBig, int bucketNo){
+	int hashValue = nextPrime(small->histogram[bucketNo]);
+	printf("%d, %d\n", hashValue, small->histogram[bucketNo]);
 	//hash small
-	
+	int32_t* bucket = malloc(hashValue * sizeof(int32_t));
+	for(int i = 0; i < hashValue; i++)
+		bucket[i] = -1;
+
+	int32_t* chain = malloc(small->histogram[bucketNo] * sizeof(int32_t));
+	int endSmall = begSmall + small->histogram[bucketNo];
+
+	for(int32_t i = begSmall; i < endSmall; i++){
+		//find hash position and increase histogram value by one
+		int32_t position = (small->tups.tuples[i].payload) % hashValue;
+		int previousValue = bucket[position];
+		bucket[position] = i-begSmall;
+		chain[i-begSmall] = previousValue;
+	}
+	free(bucket);
+	free(chain);
 	//join
 	
 }
@@ -61,7 +78,9 @@ result* RadixHashJoin(relation *relR, relation *relS){
 
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
-		if (relR.histogram[i] > relS.histogram[i])
+		if (relRhashed.histogram[i] == 0 || relShashed.histogram[i] == 0)
+			continue;
+		if (relRhashed.histogram[i] > relShashed.histogram[i])
 			getBucket(&relRhashed, &relShashed, begR, begS, i);
 		else 
 			getBucket(&relShashed, &relRhashed, begS, begR, i);
