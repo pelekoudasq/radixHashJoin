@@ -6,7 +6,14 @@
 #include "structs.h"
 
 //this is the number of the n less significant bits
-#define HASH_LSB 3
+#define HASH_LSB 8
+
+int32_t twoInLSB;
+
+typedef struct relInfo{
+	relation *tups;
+	int32_t *histogram;
+}relInfo;
 
 int32_t ipow(int32_t base, int32_t exp){
 
@@ -20,9 +27,11 @@ int32_t ipow(int32_t base, int32_t exp){
 	return result;
 }
 
-relation *hashRelation(relation *rel){
 
-	int32_t twoInLSB = ipow(2,HASH_LSB);
+
+relInfo hashRelation(relation *rel){
+
+		
 	int32_t histogram[twoInLSB];
 	for(int32_t i = 0; i < twoInLSB; i++)
 		histogram[i] = 0;
@@ -61,20 +70,30 @@ relation *hashRelation(relation *rel){
 		//increase position for current hash result value
 		sumHistogram[position]++;
 	}
-	return newRelation;
+
+	relInfo newRel;
+	newRel.tups = newRelation;
+	newRel.histogram = histogram;
+
+	return newRel;
 }
 
 result* RadixHashJoin(relation *relR, relation *relS){
+
+	twoInLSB = ipow(2,HASH_LSB);
 	
-	relation *relRhashed = hashRelation(relR);
-	relation *relShashed = hashRelation(relS);
+	relInfo relRhashed = hashRelation(relR);
+	relInfo relShashed = hashRelation(relS);
 
+	for (int i = 0; i < twoInLSB; i++){
+		getBucket(relRhashed, relShashed,)
+	}
 
-	printf("%p, %p\n", relRhashed, relShashed);
+	printf("%d, %d\n", relRhashed.tups->num_tuples, relShashed.tups->num_tuples);
 
-	free(relRhashed->tuples);
-	free(relRhashed);
-	free(relShashed->tuples);
-	free(relShashed);
+	free(relRhashed.tups->tuples);
+	free(relRhashed.tups);
+	free(relShashed.tups->tuples);
+	free(relShashed.tups);
 	return NULL;
 }
