@@ -2,24 +2,30 @@
 #define _STRUCTS_
 
 
-typedef struct tuple{
+typedef struct tuple {
 	int32_t key;
 	int32_t payload;
-}tuple;
+} tuple;
 
-typedef struct relation{
+typedef struct relation {
 	tuple *tuples;
 	uint32_t num_tuples;
-}relation;
+} relation;
 
-typedef struct relInfo{
+typedef struct relInfo {
 	relation tups;
 	int32_t *histogram;
-}relInfo;
+} relInfo;
 
-typedef struct result{
-	void *page;
-	struct result *next;
-}result;
+typedef struct bucket {
+	tuple *page;			// Table of pairs {idR, idS} (results of R |><| S)
+	struct bucket *next;
+} bucket;
+
+typedef struct {
+	int32_t capacity;		// Capacity of each & every bucket
+	int32_t size;			// Size of current bucket (all the other buckets and memory behind are full)
+	bucket* head;			// Current bucket
+} result;
 
 #endif

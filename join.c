@@ -11,7 +11,7 @@
 #define H1(X) (X & 0xFF)
 #define H2(A, B) ((A) / (B))
 
-int32_t twoInLSB;
+int32_t twoInLSB;	// 2^HASH_LSB
 
 void hashRelation(relInfo* newRel, relation *rel){
 	
@@ -35,7 +35,7 @@ void hashRelation(relInfo* newRel, relation *rel){
 	newRel->tups.tuples = malloc((rel->num_tuples)*sizeof(tuple));
 	for(int32_t i = 0; i < rel->num_tuples; i++){
 		//find hash position
-		int32_t position = (rel->tuples[i].payload)&(twoInLSB-1);
+		int32_t position = rel->tuples[i].payload & (twoInLSB-1);
 		//copy that tuple to the new table in the right position
 
 		memcpy(newRel->tups.tuples+sumHistogram[position], &rel->tuples[i], sizeof(tuple));
@@ -45,7 +45,7 @@ void hashRelation(relInfo* newRel, relation *rel){
 	free(sumHistogram);
 }
 
-void getBucket(relInfo* small, relInfo* big, int begSmall, int begBig, int bucketNo){
+void getBucket(result* list, relInfo* small, relInfo* big, int begSmall, int begBig, int bucketNo) {
 	
 	int hashValue = nextPrime(small->histogram[bucketNo]);
 	
@@ -73,6 +73,8 @@ void getBucket(relInfo* small, relInfo* big, int begSmall, int begBig, int bucke
 		int32_t position = bucket[bigHash];
 		while(position != -1){
 			if (big->tups.tuples[i].payload == small->tups.tuples[position+begSmall].payload){
+
+				// ADD TO LIST
 				printf("YES %d, %d\n", big->tups.tuples[i].payload, small->tups.tuples[position+begSmall].payload);
 			}
 			position = chain[position];
@@ -91,18 +93,16 @@ result* RadixHashJoin(relation *relR, relation *relS){
 	hashRelation(&relRhashed, relR);
 	hashRelation(&relShashed, relS);
 
+	result* list = malloc(sizeof(result));
+
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
-		if (relRhashed.histogram[i] == 0 || relShashed.histogram[i] == 0){
-			begR += relRhashed.histogram[i];
-			begS += relShashed.histogram[i];
-			continue;
+		if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
+			if (relRhashed.histogram[i] >= relShashed.histogram[i])
+				getBucket(list, &relShashed, &relRhashed, begS, begR, i);
+			else 
+				getBucket(list, &relRhashed, &relShashed, begR, begS, i);
 		}
-		if (relRhashed.histogram[i] >= relShashed.histogram[i])
-			getBucket(&relShashed, &relRhashed, begS, begR, i);
-		else 
-			getBucket(&relRhashed, &relShashed, begR, begS, i);
-
 		begR += relRhashed.histogram[i];
 		begS += relShashed.histogram[i];
 	}
@@ -111,5 +111,6 @@ result* RadixHashJoin(relation *relR, relation *relS){
 	free(relShashed.tups.tuples);
 	free(relRhashed.histogram);
 	free(relShashed.histogram);
-	return NULL;
+
+	return list;
 }

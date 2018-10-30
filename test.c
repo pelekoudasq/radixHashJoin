@@ -7,7 +7,7 @@
 #include "join.h"
 
 
-relation *tableRelation(int32_t *table, int32_t columnNumber, uint32_t numOfRows, int32_t numOfColumns){
+relation *tableRelation(int32_t *table, int32_t columnNumber, uint32_t numOfRows, int32_t numOfColumns) {
 	
 	relation *R = malloc(sizeof(relation));
 	R->num_tuples = numOfRows;
@@ -29,7 +29,7 @@ int main(){
 		{1, 5}, 
 		{2, 54}, 
 		{3, 29},
-		{4 ,64}, 
+		{4, 64}, 
 		{5, 65},
 		{6, 5}, 
 		{7, 76}, 
@@ -43,7 +43,7 @@ int main(){
 		{1, 50, 34}, 
 		{2, 51, 43}, 
 		{3, 54, 87},
-		{4 ,43, 81}, 
+		{4, 43, 81}, 
 		{5, 67, 94},
 		{6, 35, 56}, 
 		{7, 65, 77}, 
@@ -56,13 +56,16 @@ int main(){
 	relation *relX = tableRelation(x[0], 2, 10, 2);
 	relation *relY = tableRelation(y[0], 3, 10, 3);
 
-	RadixHashJoin(relX, relY);
+	result* list = RadixHashJoin(relX, relY);
+
+	// HERE PRINT THE LIST
 	
-	//free test relations
+	// Free test relations
 	free(relX->tuples);
 	free(relX);
 	free(relY->tuples);
 	free(relY);
+	free(list);
 
 	return 0;
 }
