@@ -58,13 +58,14 @@ int main(){
 
 	result* list = RadixHashJoin(relX, relY);
 
-	// HERE PRINT THE LIST
+	print_list(list);
 	
 	// Free test relations
 	free(relX->tuples);
 	free(relX);
 	free(relY->tuples);
 	free(relY);
+	empty_list(list);
 	free(list);
 
 	return 0;
