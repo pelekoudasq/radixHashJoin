@@ -75,7 +75,8 @@ void getBucket(result* list, relInfo* small, relInfo* big, int begSmall, int beg
 			if (big->tups.tuples[i].payload == small->tups.tuples[position+begSmall].payload){
 
 				// ADD TO LIST
-				printf("YES %d, %d\n", big->tups.tuples[i].payload, small->tups.tuples[position+begSmall].payload);
+				addResult(list, big->tups.tuples[i].key, small->tups.tuples[position+begSmall].key);
+				//printf("YES %d, %d\n", big->tups.tuples[i].payload, small->tups.tuples[position+begSmall].payload);
 			}
 			position = chain[position];
 		}
@@ -94,8 +95,8 @@ result* RadixHashJoin(relation *relR, relation *relS){
 	hashRelation(&relShashed, relS);
 
 	result* list = malloc(sizeof(result));
-	list->capacity = 0;
-	list->size = 0;
+	list->capacity = 1024*1024 / sizeof(tuple);
+	list->size = list->capacity;
 	list->head = NULL;
 
 	int begR = 0, begS = 0;

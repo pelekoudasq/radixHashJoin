@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "structs.h"
+#include "auxFun.h"
 #include "join.h"
 
 
