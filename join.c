@@ -94,6 +94,9 @@ result* RadixHashJoin(relation *relR, relation *relS){
 	hashRelation(&relShashed, relS);
 
 	result* list = malloc(sizeof(result));
+	list->capacity = 0;
+	list->size = 0;
+	list->head = NULL;
 
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){

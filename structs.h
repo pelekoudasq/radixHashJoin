@@ -2,17 +2,17 @@
 #define _STRUCTS_
 
 
-typedef struct tuple {
+typedef struct {
 	int32_t key;
 	int32_t payload;
 } tuple;
 
-typedef struct relation {
+typedef struct {
 	tuple *tuples;
 	uint32_t num_tuples;
 } relation;
 
-typedef struct relInfo {
+typedef struct {
 	relation tups;
 	int32_t *histogram;
 } relInfo;
