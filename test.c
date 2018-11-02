@@ -6,6 +6,7 @@
 #include "structs.h"
 #include "auxFun.h"
 #include "join.h"
+#include "resultList.h"
 
 
 relation *tableRelation(int32_t *table, int32_t columnNumber, uint32_t numOfRows, int32_t numOfColumns) {
@@ -77,11 +78,11 @@ int main(){
 	relation *relY = tableRelation(y[0], 3, 10, 3);
 	*/
 
-	relation* relX = randomRel(250000000);
+	relation* relX = randomRel(250000);
 	relation* relY = randomRel(53261);
 	
 
-	result* list = RadixHashJoin(relX, relY);
+	result *list = RadixHashJoin(relX, relY);
 
 	print_list(list);
 	

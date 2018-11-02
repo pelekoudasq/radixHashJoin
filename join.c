@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "structs.h"
+#include "resultList.h"
 #include "auxFun.h"
 
 //this is the number of the n less significant bits

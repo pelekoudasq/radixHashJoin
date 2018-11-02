@@ -1,6 +1,6 @@
 CFLAGS	= -O3 -Wall -std=c99 -lm
 JOIN	= join
-OBJS	= test.o join.o auxFun.o
+OBJS	= test.o auxFun.o resultList.o join.o 
 
 .PHONY : all clean
 all: $(JOIN)
