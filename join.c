@@ -21,7 +21,6 @@ void hashRelation(relInfo* newRel, relation *rel){
 	for(int32_t i = 0; i < rel->num_tuples; i++){
 		//find hash position and increase histogram value by one
 		int32_t position = rel->tuples[i].payload & (twoInLSB-1);
-
 		newRel->histogram[position]++;
 	}
 
@@ -38,7 +37,6 @@ void hashRelation(relInfo* newRel, relation *rel){
 		//find hash position
 		int32_t position = rel->tuples[i].payload & (twoInLSB-1);
 		//copy that tuple to the new table in the right position
-
 		memcpy(newRel->tups.tuples+sumHistogram[position], &rel->tuples[i], sizeof(tuple));
 		//increase position for current hash result value
 		sumHistogram[position]++;

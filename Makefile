@@ -1,4 +1,4 @@
-CFLAGS	= -O3 -Wall -std=c99 -lm
+CFLAGS	= -O3 -Wall -std=c99
 JOIN	= join
 OBJS	= test.o auxFun.o resultList.o join.o 
 
