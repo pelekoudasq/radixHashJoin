@@ -11,23 +11,28 @@ int countBuckets;
 int countResults;
 #endif
 
+void init_list(result* list) {
+    list->capacity = (1024*1024 - sizeof(bucketInfo)) / sizeof(tuple);
+    list->size = list->capacity;
+    list->head = NULL;
+}
+
 void empty_list(result* list) {
     #ifdef _debug_
     fprintf(stderr,"%d , %d\n", countBuckets, countResults);
     #endif
     while (list->head != NULL) {
-        bucket* temp = list->head;
+        bucketInfo* temp = list->head;
         list->head = temp->next;
-        free(temp->page);
         free(temp);
     }
 }
 
 void addResult(result* list, int32_t key1, int32_t key2) {
+    //R->key, S->payload
     if (list->size == list->capacity) {
-        bucket* temp = malloc(sizeof(bucket));
-        temp->next = list->head;  
-        temp->page = malloc(1024*1024);
+        bucketInfo* temp = malloc(1024*1024);
+        temp->next = list->head;
 
         list->head = temp;
         list->size = 0;
@@ -38,21 +43,26 @@ void addResult(result* list, int32_t key1, int32_t key2) {
     #ifdef _debug_
     countResults++;
     #endif
-    list->head->page[list->size].key = key1;
-    list->head->page[list->size].payload = key2;
+    tuple* page = (tuple*)&(list->head[1]);
+    page[list->size].key = key1;
+    page[list->size].payload = key2;
     list->size++;
 }
 
 void print_list(result* list) {
-    bucket* temp = list->head;
+    bucketInfo* temp = list->head;
+    tuple* page = (tuple*)&temp[1];
+
     if (temp == NULL) return;
     for (int32_t i = 0; i < list->size; i++) {
-        printf("YES %d, %d\n", temp->page[i].key, temp->page[i].payload);
+        printf("YES %d, %d\n", page[i].key, page[i].payload);
+        //printf("%d %d\n", (relX->tuples[temp->page[i].key-1]).payload, (relY->tuples[temp->page[i].payload-1]).payload);
     }
     temp = temp->next;
     while (temp != NULL) {
+        page = (tuple*)&temp[1];
         for (int32_t i = 0; i < list->capacity; i++) {
-            printf("YES %d, %d\n", temp->page[i].key, temp->page[i].payload);
+            printf("YES %d, %d\n", page[i].key, page[i].payload);
         }
         temp = temp->next;
     }

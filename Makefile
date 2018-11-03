@@ -8,6 +8,8 @@ all: $(JOIN) $(DEB)
 
 $(JOIN): $(OBJS)
 $(DEB): $(OBJS)
-	gcc test.c auxFun.c resultList.c join.c -D_debug_
+	gcc test.c auxFun.c resultList.c join.c -D_debug_ -o $(DEB)
 clean:
 	rm -f $(OBJS) $(JOIN) $(DEB)
+run: all
+	/bin/time ./join > /dev/null

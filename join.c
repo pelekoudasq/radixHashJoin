@@ -44,10 +44,7 @@ void hashRelation(relInfo* newRel, relation *rel){
 	free(sumHistogram);
 }
 
-void getBucket(result* list, relInfo* small, relInfo* big, int begSmall, int begBig, int bucketNo, int orderFlag) {
-	//R->key, S->payload
-
-
+void joinBuckets(result* list, relInfo* small, relInfo* big, int begSmall, int begBig, int bucketNo, int orderFlag) {
 	int hashValue = nextPrime(small->histogram[bucketNo]);
 	
 	//hash small
@@ -98,17 +95,15 @@ result* RadixHashJoin(relation *relR, relation *relS){
 	hashRelation(&relShashed, relS);
 
 	result* list = malloc(sizeof(result));
-	list->capacity = 1024*1024 / sizeof(tuple);
-	list->size = list->capacity;
-	list->head = NULL;
+	init_list(list);
 
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
 		if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
 			if (relRhashed.histogram[i] >= relShashed.histogram[i])
-				getBucket(list, &relShashed, &relRhashed, begS, begR, i, 1);
+				joinBuckets(list, &relShashed, &relRhashed, begS, begR, i, 1);
 			else
-				getBucket(list, &relRhashed, &relShashed, begR, begS, i, 0);
+				joinBuckets(list, &relRhashed, &relShashed, begR, begS, i, 0);
 		}
 		begR += relRhashed.histogram[i];
 		begS += relShashed.histogram[i];
