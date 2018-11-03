@@ -71,9 +71,8 @@ int main(){
 	relation *relY = tableRelation(y[0], 3, 10, 3);
 	*/
 
-	relation* relX = randomRel(80000);
-	relation* relY = randomRel(80000);
-	
+	relation* relX = randomRel(8);
+	relation* relY = randomRel(8);
 
 	result *list = RadixHashJoin(relX, relY);
 

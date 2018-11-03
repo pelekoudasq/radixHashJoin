@@ -12,9 +12,15 @@ int countResults;
 #endif
 
 void init_list(result* list) {
-    list->capacity = (1024*1024 - sizeof(bucketInfo)) / sizeof(tuple);
-    list->size = list->capacity;
-    list->head = NULL;
+    bucketInfo* temp = malloc(1024*1024);
+    temp->capacity = (1024*1024 - sizeof(bucketInfo)) / sizeof(tuple);
+    temp->size = 0;
+    temp->next = NULL;
+
+    fprintf(stderr,"%d\n",temp->capacity);
+
+    list->head = temp;
+    list->tail = temp;
 }
 
 void empty_list(result* list) {
@@ -30,12 +36,16 @@ void empty_list(result* list) {
 
 void addResult(result* list, int32_t key1, int32_t key2) {
     //R->key, S->payload
-    if (list->size == list->capacity) {
-        bucketInfo* temp = malloc(1024*1024);
-        temp->next = list->head;
+    bucketInfo* bucket = list->tail;
+    if (bucket->size == bucket->capacity) {
+        bucket = malloc(1024*1024);
+        bucket->capacity = (1024*1024 - sizeof(bucketInfo)) / sizeof(tuple);
+        bucket->size = 0;
+        bucket->next = NULL;
 
-        list->head = temp;
-        list->size = 0;
+        list->tail->next = bucket;
+        list->tail = bucket;
+
         #ifdef _debug_
         countBuckets++;
         #endif
@@ -43,24 +53,20 @@ void addResult(result* list, int32_t key1, int32_t key2) {
     #ifdef _debug_
     countResults++;
     #endif
-    key_tuple* page = (key_tuple*)&(list->head[1]);
-    page[list->size].keyR = key1;
-    page[list->size].keyS = key2;
-    list->size++;
+
+    key_tuple* page = (key_tuple*)&(bucket[1]);
+    page[bucket->size].keyR = key1;
+    page[bucket->size].keyS = key2;
+    bucket->size++;
 }
 
 void print_list(result* list) {
     bucketInfo* temp = list->head;
     key_tuple* page = (key_tuple*)&temp[1];
 
-    if (temp == NULL) return;
-    for (int32_t i = 0; i < list->size; i++) {
-        printf("YES %d, %d\n", page[i].keyR, page[i].keyS);
-    }
-    temp = temp->next;
     while (temp != NULL) {
         page = (key_tuple*)&temp[1];
-        for (int32_t i = 0; i < list->capacity; i++) {
+        for (int32_t i = 0; i < temp->size; i++) {
             printf("YES %d, %d\n", page[i].keyR, page[i].keyS);
         }
         temp = temp->next;
