@@ -14,6 +14,6 @@ typedef struct {
 
 void empty_list(result*);
 void addResult(result*, int32_t, int32_t);
-void print_list(result*, relation*, relation*);
+void print_list(result*);
 
 #endif

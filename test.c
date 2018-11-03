@@ -10,35 +10,28 @@
 
 
 relation *tableRelation(int32_t *table, int32_t columnNumber, uint32_t numOfRows, int32_t numOfColumns) {
-	
+
 	relation *R = malloc(sizeof(relation));
 	R->num_tuples = numOfRows;
 	R->tuples = malloc(numOfRows*sizeof(tuple));
 	for (int32_t i = 0; i < numOfRows; i++){
-
-		tuple tempTuple;
-		tempTuple.key = i + 1;
-		tempTuple.payload = table[i*numOfColumns+columnNumber-1];
-		memcpy(R->tuples+i, &tempTuple, sizeof(tuple));
+		R->tuples[i].key = i + 1;
+		R->tuples[i].payload = table[i*numOfColumns+columnNumber-1];
 	}
 	return R;
 }
 
 relation *randomRel(int x) {
+
 	relation *R = malloc(sizeof(relation));
 	R->num_tuples = x;
 	R->tuples = malloc(x*sizeof(tuple));
 	if(R->tuples == NULL){
 		fprintf(stderr, ">>>>>>>>>>>>>>>>>>> Fail\n");
-
 	}
 	for (int32_t i = 0; i < x; i++){
-
-		tuple tempTuple;
-		tempTuple.key = i + 1;
-		tempTuple.payload = rand() % 50;
-		//fprintf(stderr, "->>>>>>>>>>>>> %d %p %p\n", i, R, R->tuples);
-		memcpy(R->tuples+i, &tempTuple, sizeof(tuple));
+		R->tuples[i].key = i + 1;
+		R->tuples[i].payload = rand() % 25;
 	}
 	return R;
 }
@@ -78,13 +71,13 @@ int main(){
 	relation *relY = tableRelation(y[0], 3, 10, 3);
 	*/
 
-	relation* relX = randomRel(30);
-	relation* relY = randomRel(40);
+	relation* relX = randomRel(30000);
+	relation* relY = randomRel(80000);
 	
 
 	result *list = RadixHashJoin(relX, relY);
 
-	print_list(list, relX, relY);
+	print_list(list);
 	
 	// Free test relations
 	free(relX->tuples);
@@ -96,3 +89,4 @@ int main(){
 
 	return 0;
 }
+

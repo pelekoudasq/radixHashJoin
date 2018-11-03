@@ -105,14 +105,10 @@ result* RadixHashJoin(relation *relR, relation *relS){
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
 		if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
-			if (relRhashed.histogram[i] >= relShashed.histogram[i]){
+			if (relRhashed.histogram[i] >= relShashed.histogram[i])
 				getBucket(list, &relShashed, &relRhashed, begS, begR, i, 1);
-				printf("la8os\n");
-			}
-			else {
+			else
 				getBucket(list, &relRhashed, &relShashed, begR, begS, i, 0);
-				printf("sosti seira\n");
-			}
 		}
 		begR += relRhashed.histogram[i];
 		begS += relShashed.histogram[i];
