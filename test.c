@@ -78,13 +78,13 @@ int main(){
 	relation *relY = tableRelation(y[0], 3, 10, 3);
 	*/
 
-	relation* relX = randomRel(250000);
-	relation* relY = randomRel(53261);
+	relation* relX = randomRel(30);
+	relation* relY = randomRel(40);
 	
 
 	result *list = RadixHashJoin(relX, relY);
 
-	print_list(list);
+	print_list(list, relX, relY);
 	
 	// Free test relations
 	free(relX->tuples);

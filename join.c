@@ -44,8 +44,10 @@ void hashRelation(relInfo* newRel, relation *rel){
 	free(sumHistogram);
 }
 
-void getBucket(result* list, relInfo* small, relInfo* big, int begSmall, int begBig, int bucketNo) {
-	
+void getBucket(result* list, relInfo* small, relInfo* big, int begSmall, int begBig, int bucketNo, int orderFlag) {
+	//R->key, S->payload
+
+
 	int hashValue = nextPrime(small->histogram[bucketNo]);
 	
 	//hash small
@@ -72,10 +74,12 @@ void getBucket(result* list, relInfo* small, relInfo* big, int begSmall, int beg
 		int32_t position = bucket[bigHash];
 		while(position != -1){
 			if (big->tups.tuples[i].payload == small->tups.tuples[position+begSmall].payload){
-
 				// ADD TO LIST
-				addResult(list, big->tups.tuples[i].key, small->tups.tuples[position+begSmall].key);
-				//printf("YES %d, %d\n", big->tups.tuples[i].payload, small->tups.tuples[position+begSmall].payload);
+				if(orderFlag)
+					addResult(list, big->tups.tuples[i].key, small->tups.tuples[position+begSmall].key);
+				else
+					addResult(list, small->tups.tuples[position+begSmall].key, big->tups.tuples[i].key);
+				//printf("%d, %d /", big->tups.tuples[i].payload, small->tups.tuples[position+begSmall].payload);
 			}
 			position = chain[position];
 		}
@@ -101,10 +105,14 @@ result* RadixHashJoin(relation *relR, relation *relS){
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
 		if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
-			if (relRhashed.histogram[i] >= relShashed.histogram[i])
-				getBucket(list, &relShashed, &relRhashed, begS, begR, i);
-			else 
-				getBucket(list, &relRhashed, &relShashed, begR, begS, i);
+			if (relRhashed.histogram[i] >= relShashed.histogram[i]){
+				getBucket(list, &relShashed, &relRhashed, begS, begR, i, 1);
+				printf("la8os\n");
+			}
+			else {
+				getBucket(list, &relRhashed, &relShashed, begR, begS, i, 0);
+				printf("sosti seira\n");
+			}
 		}
 		begR += relRhashed.histogram[i];
 		begS += relShashed.histogram[i];

@@ -30,11 +30,12 @@ void addResult(result* list, int32_t key1, int32_t key2) {
     list->size++;
 }
 
-void print_list(result* list) {
+void print_list(result* list, relation* relX, relation* relY) {
     bucket* temp = list->head;
     if (temp == NULL) return;
     for (int32_t i = 0; i < list->size; i++) {
         printf("YES %d, %d\n", temp->page[i].key, temp->page[i].payload);
+        printf("%d %d\n", (relX->tuples[temp->page[i].key-1]).payload, (relY->tuples[temp->page[i].payload-1]).payload);
     }
     temp = temp->next;
     while (temp != NULL) {
