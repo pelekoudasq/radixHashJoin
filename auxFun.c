@@ -8,17 +8,20 @@
 
 int32_t nextPrime(int32_t x) {
     if (x < 2) return 2;
+    if (x == 3) return 5;
     int32_t retValue = (x % 2) ? x + 2 : x + 1; // next odd number
-    while(1) {
-        int isPrime = 1;
-        for(int32_t i = 3; i*i <= retValue; i += 2){
-            if(retValue % i == 0){
-                isPrime = 0;
-                break;
+    while (1) {
+        if (retValue % 3 != 0) {
+            int isPrime = 1;
+            for (int32_t i = 5; i*i <= retValue; i += 6){
+                if (retValue % i == 0 || retValue % (i+2) == 0) {
+                    isPrime = 0;
+                    break;
+                }
             }
+            if (isPrime)
+                return retValue;
         }
-        if (isPrime)
-            return retValue;
         retValue += 2;
     }
 }
@@ -27,3 +30,11 @@ int32_t pow2(int32_t exp){
     return 1 << exp;
 }
 
+// int main(void) { // VOID MONO
+
+//     for (int i=0; i<20; i++) {
+//         printf("%d : %d = %d\n", i, nextPrime(i), nextPrime3(i));
+//     }
+
+
+// }

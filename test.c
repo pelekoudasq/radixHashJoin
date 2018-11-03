@@ -71,7 +71,7 @@ int main(){
 	relation *relY = tableRelation(y[0], 3, 10, 3);
 	*/
 
-	relation* relX = randomRel(30000);
+	relation* relX = randomRel(80000);
 	relation* relY = randomRel(80000);
 	
 

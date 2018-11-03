@@ -43,26 +43,25 @@ void addResult(result* list, int32_t key1, int32_t key2) {
     #ifdef _debug_
     countResults++;
     #endif
-    tuple* page = (tuple*)&(list->head[1]);
-    page[list->size].key = key1;
-    page[list->size].payload = key2;
+    key_tuple* page = (key_tuple*)&(list->head[1]);
+    page[list->size].keyR = key1;
+    page[list->size].keyS = key2;
     list->size++;
 }
 
 void print_list(result* list) {
     bucketInfo* temp = list->head;
-    tuple* page = (tuple*)&temp[1];
+    key_tuple* page = (key_tuple*)&temp[1];
 
     if (temp == NULL) return;
     for (int32_t i = 0; i < list->size; i++) {
-        printf("YES %d, %d\n", page[i].key, page[i].payload);
-        //printf("%d %d\n", (relX->tuples[temp->page[i].key-1]).payload, (relY->tuples[temp->page[i].payload-1]).payload);
+        printf("YES %d, %d\n", page[i].keyR, page[i].keyS);
     }
     temp = temp->next;
     while (temp != NULL) {
-        page = (tuple*)&temp[1];
+        page = (key_tuple*)&temp[1];
         for (int32_t i = 0; i < list->capacity; i++) {
-            printf("YES %d, %d\n", page[i].key, page[i].payload);
+            printf("YES %d, %d\n", page[i].keyR, page[i].keyS);
         }
         temp = temp->next;
     }

@@ -1,8 +1,13 @@
 #ifndef _RESULT_LIST_
 #define _RESULT_LIST_
 
+typedef struct {
+	int32_t keyR;
+	int32_t keyS;
+} key_tuple;
+
 typedef struct bucketInfo {
-	tuple *page;			// Table of pairs {idR, idS} (results of R |><| S)
+	key_tuple *page;			// Table of pairs {idR, idS} (results of R |><| S)
 	struct bucketInfo *next;
 } bucketInfo;
 

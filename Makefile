@@ -12,4 +12,4 @@ $(DEB): $(OBJS)
 clean:
 	rm -f $(OBJS) $(JOIN) $(DEB)
 run: all
-	/bin/time ./join > /dev/null
+	time --format="Time Elapsed: %E" ./joindeb > /dev/null
