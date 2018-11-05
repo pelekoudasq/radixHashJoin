@@ -15,6 +15,6 @@ typedef struct {
 typedef struct {
 	relation tups;
 	int32_t *histogram;
-} relation_Info;
+} relation_info;
 
 #endif

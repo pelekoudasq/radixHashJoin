@@ -9,12 +9,12 @@
 
 /* This is the number of the n less significant bits */
 #define HASH_LSB 8
-#define H1(X) (X & 0xFF)
-#define H2(A, B) ((A) / (B))
+//#define H1(X) (X & 0xFF)
+//#define H2(A, B) ((A) / (B))
 
 int32_t twoInLSB;	// 2^HASH_LSB
 
-void hash_relation(relation_Info* newRel, relation *rel){
+void hash_relation(relation_info* newRel, relation *rel){
 	
 	newRel->histogram = calloc(twoInLSB, sizeof(int32_t));
 	/* First parsing through table */
@@ -44,7 +44,7 @@ void hash_relation(relation_Info* newRel, relation *rel){
 	free(sumHistogram);
 }
 
-void join_buckets(result* list, relation_Info* small, relation_Info* big, int begSmall, int begBig, int bucketNo, int orderFlag) {
+void join_buckets(result* list, relation_info* small, relation_info* big, int begSmall, int begBig, int bucketNo, int orderFlag) {
 	int hashValue = next_prime(small->histogram[bucketNo]);
 	
 	/* hash small */
@@ -52,6 +52,7 @@ void join_buckets(result* list, relation_Info* small, relation_Info* big, int be
 	for (int i = 0; i < hashValue; i++)
 		bucket[i] = -1;
 
+	/* make chain array */
 	int32_t* chain = malloc(small->histogram[bucketNo] * sizeof(int32_t));
 	int endSmall = begSmall + small->histogram[bucketNo];
 
@@ -71,7 +72,7 @@ void join_buckets(result* list, relation_Info* small, relation_Info* big, int be
 		while (position != -1) {
 			if (big->tups.tuples[i].payload == small->tups.tuples[position+begSmall].payload) {
 				/* Add resulting RowIDs to list */
-				if (orderFlag)
+				if (orderFlag)		/* always put key of array R first and then key of array S */
 					add_result(list, big->tups.tuples[i].key, small->tups.tuples[position+begSmall].key);
 				else
 					add_result(list, small->tups.tuples[position+begSmall].key, big->tups.tuples[i].key);
@@ -86,14 +87,15 @@ void join_buckets(result* list, relation_Info* small, relation_Info* big, int be
 result* RadixHashJoin(relation *relR, relation *relS) {
 	twoInLSB = pow2(HASH_LSB);
 
-	relation_Info relRhashed;
-	relation_Info relShashed;
+	relation_info relRhashed;
+	relation_info relShashed;
 	hash_relation(&relRhashed, relR);
 	hash_relation(&relShashed, relS);
 
 	result* list = malloc(sizeof(result));
 	init_list(list);
 
+	/* Join buckets */
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
 		if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {

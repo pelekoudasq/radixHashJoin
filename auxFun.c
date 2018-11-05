@@ -6,6 +6,8 @@
 #include "structs.h"
 #include "auxFun.h"
 
+
+/* Get next prime for hashing */
 int32_t next_prime(int32_t x) {
     if (x < 2) return 2;
     if (x == 3) return 5;
@@ -29,10 +31,3 @@ int32_t next_prime(int32_t x) {
 int32_t pow2(int32_t exp){
     return 1 << exp;
 }
-
-/* int main() {
-    for (int i=0; i<20; i++)
-        printf("%d : %d = %d\n", i, next_prime(i), next_prime3(i));
-
-    return 0;
-} */
