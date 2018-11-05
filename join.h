@@ -3,6 +3,6 @@
 
 #include "resultList.h"
 
-result *RadixHashJoin(relation *, relation *);
+result *RadixHashJoin(relation*, relation*);
 
 #endif

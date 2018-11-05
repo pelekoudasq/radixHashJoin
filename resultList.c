@@ -12,7 +12,7 @@ int countResults;
 #endif
 
 void init_list(result* list) {
-    list->capacity = (1024*1024 - sizeof(bucketInfo)) / sizeof(tuple);
+    list->capacity = (1024*1024 - sizeof(bucket_Info)) / sizeof(tuple);
     list->size = list->capacity;
     list->head = NULL;
 }
@@ -22,16 +22,15 @@ void empty_list(result* list) {
     fprintf(stderr,"%d , %d\n", countBuckets, countResults);
     #endif
     while (list->head != NULL) {
-        bucketInfo* temp = list->head;
+        bucket_Info* temp = list->head;
         list->head = temp->next;
         free(temp);
     }
 }
 
-void addResult(result* list, int32_t key1, int32_t key2) {
-    //R->key, S->payload
+void add_result(result* list, int32_t key1, int32_t key2) {
     if (list->size == list->capacity) {
-        bucketInfo* temp = malloc(1024*1024);
+        bucket_Info* temp = malloc(1024*1024);
         temp->next = list->head;
 
         list->head = temp;
@@ -50,18 +49,18 @@ void addResult(result* list, int32_t key1, int32_t key2) {
 }
 
 void print_list(result* list) {
-    bucketInfo* temp = list->head;
+    bucket_Info* temp = list->head;
     key_tuple* page = (key_tuple*)&temp[1];
 
     if (temp == NULL) return;
-    for (int32_t i = 0; i < list->size; i++) {
-        printf("YES %d, %d\n", page[i].keyR, page[i].keyS);
+    for (int32_t i=0; i<list->size; i++) {
+        printf("Pairs of IDs are: %d, %d\n", page[i].keyR, page[i].keyS);
     }
     temp = temp->next;
     while (temp != NULL) {
         page = (key_tuple*)&temp[1];
-        for (int32_t i = 0; i < list->capacity; i++) {
-            printf("YES %d, %d\n", page[i].keyR, page[i].keyS);
+        for (int32_t i=0; i<list->capacity; i++) {
+            printf("Pairs of IDs are: %d, %d\n", page[i].keyR, page[i].keyS);
         }
         temp = temp->next;
     }

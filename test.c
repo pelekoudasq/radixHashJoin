@@ -36,7 +36,7 @@ relation *randomRel(int x) {
 	return R;
 }
 
-int main(){
+int main(void) {
 	srand(101);
 	//test table 1
 	/*int32_t x[10][2] = {
@@ -74,7 +74,6 @@ int main(){
 	relation* relX = randomRel(80000);
 	relation* relY = randomRel(80000);
 	
-
 	result *list = RadixHashJoin(relX, relY);
 
 	print_list(list);
