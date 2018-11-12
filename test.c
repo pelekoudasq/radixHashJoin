@@ -46,6 +46,21 @@ typedef struct {
 	uint64_t *value;
 }relList;
 
+
+typedef struct relTable{
+	uint64_t position;
+	uint64_t relation; 
+}relTable;
+
+relTable *table = malloc(sizeof(relTable)*4);
+int curPos = 0;
+
+void push_table(uint64_t x){
+	table[curPos] = x;
+	curPos++;
+}
+
+
 uint64_t read_number(int ch, int* delim){
 
 	uint64_t num = 0;
@@ -58,12 +73,6 @@ uint64_t read_number(int ch, int* delim){
 	return num;
 }
 
-
-
-void push_table(uint64_t x){
-
-}
-
 void read_relations(){
 
 	char ch = getchar();
@@ -73,19 +82,18 @@ void read_relations(){
 	}
 }
 
-
 void read_predicates(){
 
 	char ch = getchar();
 	char delim;
-	while(ch != '|'){
-		uint64_t table1 = read_number(ch, NULL); //teleiia
+	while(ch != '|'){										//for every predicate
+		uint64_t table1 = read_number(ch, NULL); 			//read number(table1), ignore->(.) that follows it
 		char op;
-		uint64_t column1 = read_number(getchar(), &op);
-		uint64_t unknown = read_number(getchar(), &delim);
-		if(delim == '.'){
-			uint64_t table2 = unknown;
-			uint64_t column2 = read_number(getchar(), &ch); //op einai eite & eite |
+		uint64_t column1 = read_number(getchar(), &op);		//read number(column1), save operation that follows it
+		uint64_t unknown = read_number(getchar(), &ch);		//read next number after operation, save delimiter
+		if(ch == '.'){										//if delimighter is (.) we have join
+			uint64_t table2 = unknown;						//the previous number we collected is table2
+			uint64_t column2 = read_number(getchar(), &ch); //read number(column2), save what follows( & or | )
 			//////////add to join tables and columns and operation
 		} else {
 			//////////op filter with unknown
