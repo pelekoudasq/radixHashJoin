@@ -1,7 +1,16 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <ctype.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/errno.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "structs.h"
 #include "auxFun.h"
@@ -9,83 +18,142 @@
 #include "resultList.h"
 
 
-relation *tableRelation(int32_t *table, int32_t columnNumber, uint32_t numOfRows, int32_t numOfColumns) {
 
-	relation *R = malloc(sizeof(relation));
-	R->num_tuples = numOfRows;
-	R->tuples = malloc(numOfRows*sizeof(tuple));
-	for (int32_t i = 0; i < numOfRows; i++){
-		R->tuples[i].key = i + 1;
-		R->tuples[i].payload = table[i*numOfColumns+columnNumber-1];
-	}
-	return R;
+typedef struct fileList{
+	char *filepath;
+	struct fileList *next;
+}fileList;
+
+fileList *push_file(fileList *head, char* filepath){
+	
+	fileList *newNode = malloc(sizeof(fileList));
+	newNode->filepath = filepath;
+	newNode->next = head;
+	return newNode;
 }
 
-relation *randomRel(int x) {
+fileList *pop_file(fileList *head, char **filepath){
 
-	relation *R = malloc(sizeof(relation));
-	R->num_tuples = x;
-	R->tuples = malloc(x*sizeof(tuple));
-	if(R->tuples == NULL){
-		fprintf(stderr, ">>>>>>>>>>>>>>>>>>> Fail\n");
-	}
-	for (int32_t i = 0; i < x; i++){
-		R->tuples[i].key = i + 1;
-		R->tuples[i].payload = rand() % 25;
-	}
-	return R;
+	fileList *temp = head->next;
+	*filepath = head->filepath;
+	free(head);
+	return temp;
 }
 
-int main(void) {
-	srand(101);
-	//test table 1
-	/*int32_t x[10][2] = {
-		{1, 5}, 
-		{2, 54}, 
-		{3, 29},
-		{4, 64}, 
-		{5, 65},
-		{6, 5}, 
-		{7, 76}, 
-		{8, 94}, 
-		{9, 23}, 
-		{10, 43}
-	};
+typedef struct {
+	uint64_t num_tuples;
+	uint64_t num_columns;
+	uint64_t *value;
+}relList;
 
-	//test table 2
-	int32_t y[10][3] = {
-		{1, 50, 34}, 
-		{2, 51, 43}, 
-		{3, 54, 87},
-		{4, 43, 81}, 
-		{5, 67, 94},
-		{6, 35, 56}, 
-		{7, 65, 77}, 
-		{8, 29, 39}, 
-		{9, 87, 29}, 
-		{10, 5, 59}
-	};
-	
-	//create test relations
-	relation *relX = tableRelation(x[0], 2, 10, 2);
-	relation *relY = tableRelation(y[0], 3, 10, 3);
-	*/
+uint64_t read_number(int ch, int* delim){
 
-	relation* relX = randomRel(80000);
-	relation* relY = randomRel(80000);
-	
-	result *list = RadixHashJoin(relX, relY);
+	uint64_t num = 0;
+	while( isdigit(ch) ){
+		num = num*10 + ch - '0';
+		ch = getchar();
+	}
+	if (delim)
+		*delim = ch;
+	return num;
+}
 
-	print_list(list);
+
+
+void push_table(uint64_t x){
+
+}
+
+void read_relations(){
+
+	char ch = getchar();
+	while(ch != '|'){
+		//push_table
+		push_table(read_number(ch, &ch));
+	}
+}
+
+
+void read_predicates(){
+
+	char ch = getchar();
+	char delim;
+	while(ch != '|'){
+		uint64_t table1 = read_number(ch, NULL); //teleiia
+		char op;
+		uint64_t column1 = read_number(getchar(), &op);
+		uint64_t unknown = read_number(getchar(), &delim);
+		if(delim == '.'){
+			uint64_t table2 = unknown;
+			uint64_t column2 = read_number(getchar(), &ch); //op einai eite & eite |
+			//////////add to join tables and columns and operation
+		} else {
+			//////////op filter with unknown
+		}
+	}
+}
+
+
+void read_projections(){}
+
+
+
+int main(int argc, char const *argv[]){
 	
-	// Free test relations
-	free(relX->tuples);
-	free(relX);
-	free(relY->tuples);
-	free(relY);
-	empty_list(list);
-	free(list);
+	char *lineptr = NULL;
+	size_t n = 0;
+	ssize_t lineSize;
+	fileList *list = NULL;
+	int listSize = 0;
+
+	//get every filepath, push it to the list
+	while ( (lineSize = getline(&lineptr, &n, stdin)) != -1 && strcmp(lineptr, "Done\n") != 0 ){
+		lineptr[lineSize-1] = '\0';
+		char *filepath = malloc(lineSize);
+		strcpy(filepath, lineptr);
+		list = push_file(list, filepath);
+		listSize++;
+	}
+
+	if( lineptr != NULL )
+		free(lineptr);
+
+	relList *relations = malloc(sizeof(relList)*listSize);
+
+	for (int i = listSize-1; i >= 0; i--){
+
+		char *filepath;
+		list = pop_file(list, &filepath);
+		int fileDesc = open(filepath, O_RDONLY);
+		free(filepath);
+		read(fileDesc, &relations[i].num_tuples, sizeof(uint64_t));
+		read(fileDesc, &relations[i].num_columns, sizeof(uint64_t));
+		relations[i].value = mmap(NULL, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fileDesc, 0);
+		relations[i].value += 2;
+		close(fileDesc);
+	}
+
+	for (int i = 0; i < listSize; ++i){
+		//printf("%ld, %ld\n", relations[i].num_tuples, relations[i].num_columns);
+		for (int j = 0; j < relations[i].num_tuples; ++j){
+			for (int k = 0; k < relations[i].num_columns; ++k)
+			{
+				printf("%ld|", relations[i].value[k*relations[i].num_tuples+j]);
+			}
+			printf("\n");
+
+		}
+	}
+
+	//parse batch
+	//read_relations();
+	//read_predicates();
+	//read_projections();
+
+	for (int i = 0; i < listSize; ++i){
+		munmap(relations[i].value, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t));
+	}
+	free(relations);
 
 	return 0;
 }
-
