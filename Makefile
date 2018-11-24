@@ -8,7 +8,7 @@ all: $(JOIN) $(DEB)
 
 $(JOIN): $(OBJS)
 $(DEB): $(OBJS)
-	gcc test.c auxFun.c resultList.c join.c -D_debug_ -o $(DEB)
+	gcc -g test.c auxFun.c resultList.c join.c -D_debug_ -o $(DEB)
 clean:
 	rm -f $(OBJS) $(JOIN) $(DEB)
 run: all
