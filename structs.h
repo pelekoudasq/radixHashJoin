@@ -1,7 +1,6 @@
 #ifndef _STRUCTS_
 #define _STRUCTS_
 
-
 typedef struct {
 	int32_t key;
 	int32_t payload;
