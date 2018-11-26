@@ -213,6 +213,41 @@ int **run_filters(query_info* query, relList *relations) {
 	return filter_results;
 }
 
+void self_join(join_info *join, relList *relations, uint64_t table_number) {
+
+		uint64_t column1_number = join->column1;
+	uint64_t column2_number = join->column2;
+	for(size_t i = 0; i < relations[table_number].num_tuples; i++){
+		uint64_t value1 = relations[table_number].value[column1_number*relations[table_number].num_tuples+i];
+		uint64_t value2 = relations[table_number].value[column2_number*relations[table_number].num_tuples+i];
+		if (value1 == value2){
+			//add i (rowid) to intermediate results for table
+		}
+	}
+}
+
+void run_joins(query_info* query, relList *relations) {
+
+	join_info *join = query->join;
+	for (size_t i = 0; i < query->join_size; i++) {
+		// if self join
+		if ( join->table1 == join->table2 ){
+			uint64_t table_number = query->table[join->table1];
+			self_join(join, relations, table_number);
+		} else {
+			uint64_t table1_number = query->table[join->table1];
+			uint64_t column1_number = join->column1;
+			uint64_t table2_number = query->table[join->table2];
+			uint64_t column2_number = join->column2;
+			//get rowids for these tables from intermediate results, if they exist
+			//create relations to send to RadixHashJoin
+			//send relations to RadxHashJoin
+			//get results to intermediate
+		}
+		join++;
+	}
+}
+
 void execute(query_info* query, relList *relations) {
 	int **filter_results = run_filters(query, relations);
 	/*for (int i = 0; i < query->table_size; ++i) {
@@ -225,7 +260,7 @@ void execute(query_info* query, relList *relations) {
 		}
 		printf("\n");
 	}*/
-	//run_queries();
+	//run_joins();
 	print_query(query);
 }
 
