@@ -19,13 +19,6 @@
 #include "file_list/fileList.h"
 #include "query_handler/query.h"
 
-typedef struct {
-	uint64_t num_tuples;
-	uint64_t num_columns;
-	uint64_t *value;
-}relList;
-
-
 
 int **run_filters(query_info* query, relList *relations) {
 	
@@ -52,7 +45,7 @@ int **run_filters(query_info* query, relList *relations) {
 
 void parse_table(join_info *join, relList *relations, uint64_t table_number) {
 
-		uint64_t column1_number = join->column1;
+	uint64_t column1_number = join->column1;
 	uint64_t column2_number = join->column2;
 	for(size_t i = 0; i < relations[table_number].num_tuples; i++){
 		uint64_t value1 = relations[table_number].value[column1_number*relations[table_number].num_tuples+i];
