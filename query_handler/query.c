@@ -14,6 +14,7 @@
 
 #include "query.h"
 
+
 uint64_t read_number(int ch, int* delim){
 	uint64_t num = 0;
 	while( isdigit(ch) ){

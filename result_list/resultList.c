@@ -3,13 +3,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "structs.h"
+#include "../structs.h"
 #include "resultList.h"
 
 #ifdef _debug_
 int countBuckets;
 int countResults;
 #endif
+
 
 void init_list(result* list) {
     list->capacity = (1024*1024 - sizeof(bucket_info)) / sizeof(tuple);

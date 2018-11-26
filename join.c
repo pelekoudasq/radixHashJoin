@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 #include "structs.h"
-#include "resultList.h"
-#include "auxFun.h"
+#include "result_list/resultList.h"
+#include "aux_fun/auxFun.h"
 
 /* This is the number of the n less significant bits */
 #define HASH_LSB 8

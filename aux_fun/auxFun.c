@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "structs.h"
+#include "../structs.h"
 #include "auxFun.h"
 
 

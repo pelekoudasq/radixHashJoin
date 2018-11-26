@@ -13,11 +13,11 @@
 #include <unistd.h>
 
 #include "structs.h"
-#include "auxFun.h"
+#include "aux_fun/auxFun.h"
 #include "join.h"
-#include "resultList.h"
-#include "fileList.h"
-#include "query.h"
+#include "result_list/resultList.h"
+#include "file_list/fileList.h"
+#include "query_handler/query.h"
 
 typedef struct {
 	uint64_t num_tuples;

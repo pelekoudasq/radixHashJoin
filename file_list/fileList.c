@@ -5,6 +5,7 @@
 
 #include "fileList.h"
 
+
 fileList *push_file(fileList *head, char *filepath){
 	
 	fileList *newNode = malloc(sizeof(fileList));
