@@ -65,7 +65,7 @@ void read_predicates(query_info *query){
 		uint64_t table1 = read_number(ch, &op); 			//read number(table1), ignore->(.) that follows it
 		uint64_t column1 = read_number(getchar(), &op);		//read number(column1), save operation that follows it
 		uint64_t unknown = read_number(getchar(), &ch);		//read next number after operation, save delimiter
-		if(ch == '.'){										//if delimighter is (.) we have join
+		if(ch == '.'){										//if delimiter is (.) we have join
 			uint64_t column2 = read_number(getchar(), &ch); //read number(column2), save what follows( & or | )
 			join[join_size].table1 = table1;
 			join[join_size].table2 = unknown;

@@ -154,6 +154,7 @@ int main(int argc, char const *argv[]){
 		while (1) {
 			query_info* query = malloc(sizeof(query_info));
 			int returnValue = read_relations(query);
+			//check return value for end of file or end of batch
 			if (returnValue == EOF) {
 				getchar();
 				free(query);
@@ -161,7 +162,7 @@ int main(int argc, char const *argv[]){
 				queries = NULL;
 				break;
 			} else if (returnValue){
-				getchar();
+				getchar();							//get \n and continue to next batch
 				break;
 			}
 			read_predicates(query);
