@@ -11,13 +11,14 @@ int countBuckets;
 int countResults;
 #endif
 
-
+/* Initialize result list. */
 void init_list(result* list) {
     list->capacity = (1024*1024 - sizeof(bucket_info)) / sizeof(tuple);
     list->size = list->capacity;
     list->head = NULL;
 }
 
+/* Free result list's contents. */
 void empty_list(result* list) {
     #ifdef _debug_
     fprintf(stderr,"%d , %d\n", countBuckets, countResults);
@@ -29,6 +30,7 @@ void empty_list(result* list) {
     }
 }
 
+/* Add result to result list. */
 void add_result(result* list, int32_t key1, int32_t key2) {
 
     /*if page is full, get more space */
@@ -51,6 +53,7 @@ void add_result(result* list, int32_t key1, int32_t key2) {
     list->size++;
 }
 
+/* Print result list (for checking results). */
 void print_list(result* list) {
     bucket_info* temp = list->head;
     key_tuple* page = (key_tuple*)&temp[1];

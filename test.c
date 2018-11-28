@@ -115,7 +115,8 @@ int main(int argc, char const *argv[]){
 		free(lineptr);
 
 	relList *relations = malloc(sizeof(relList)*listSize);
-
+	
+	//for every filepath, open file and get contents
 	for (int i = listSize-1; i >= 0; i--){
 
 		char *filepath;
@@ -170,6 +171,7 @@ int main(int argc, char const *argv[]){
 		batch_push(&batches, queries);
 	}
 
+	//for every batch, execute queries
 	batch_node* batch = batches.head;
 	while (batch != NULL) {
 		query_node* query = batch->queries->head;

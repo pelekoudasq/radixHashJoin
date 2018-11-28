@@ -14,7 +14,8 @@
 
 #include "query.h"
 
-
+/* Get the whole number from string input.
+	Return number as uint64_t and next character as delim */
 uint64_t read_number(int ch, int* delim){
 	uint64_t num = 0;
 	while( isdigit(ch) ){
@@ -25,15 +26,20 @@ uint64_t read_number(int ch, int* delim){
 	return num;
 }
 
+/* Gets the tables needed for the query. Also, checks for end of input and returns accordingly.
+	Takes the query struct as argument to update.*/
 int read_relations(query_info *query){
+	int ch = getchar();
+	//check if end of batch or end of file
+	if (ch == 'F' ) return 1;
+	if (ch == EOF) return EOF;
+
 	uint64_t *table = malloc(sizeof(uint64_t)*4);
 	size_t table_size = 0;
 	//push_table
-	int ch = getchar();
-	if (ch == 'F' ) return 1;
-	if (ch == EOF) return EOF;
 	table[table_size] = read_number(ch, &ch);
 	table_size++;
+
 	while(ch != '|'){
 		//push_table
 		ch = getchar();
@@ -45,6 +51,8 @@ int read_relations(query_info *query){
 	return 0;
 }
 
+/* Reads predicates for query. Stores filters and joins separetely.
+	Takes the query struct as argument to update.*/
 void read_predicates(query_info *query){
 	join_info *join = malloc(sizeof(join_info)*4);
 	filter_info *filter = malloc(sizeof(filter_info)*4);
@@ -78,19 +86,22 @@ void read_predicates(query_info *query){
 	query->filter_size = filter_size;
 }
 
+/* Gets projections required.
+	Takes the query struct as argument to update. */
 void read_projections(query_info *query){
 	query->proj = malloc(sizeof(proj_info)*4);
 	query->proj_size = 0;
 	int ch = '\0';
-	while(ch != '\n'){										//for every predicate
-		uint64_t table = read_number(getchar(), &ch);		//read number(table1), ignore->(.) that follows it
-		uint64_t column = read_number(getchar(), &ch);		//read number(column1), save operation that follows it
+	while(ch != '\n'){										//while not end of line
+		uint64_t table = read_number(getchar(), &ch);		//read number(table), ignore->(.) that follows it
+		uint64_t column = read_number(getchar(), &ch);		//read number(column), keep ch to check if \n
 		query->proj[query->proj_size].table = table;
 		query->proj[query->proj_size].column = column;
 		query->proj_size++;
 	}
 }
 
+/* Frees query struct. */
 void free_query(query_info *query) {
 	free(query->table);
 	free(query->join);
@@ -98,16 +109,20 @@ void free_query(query_info *query) {
 	free(query->proj);
 }
 
+/* Prints query struct to check if input is read correctly. Assumes joins are given before filters. */
 void print_query(query_info *query) {
+	//tables
 	if (query->table_size)
 		printf("%ld", query->table[0]);
 	for (int i = 1; i < query->table_size; i++)
 		printf(" %ld", query->table[i]);
 	putchar('|');
+	//joins
 	if (query->join_size)
 		printf("%ld.%ld=%ld.%ld", query->join[0].table1, query->join[0].column1, query->join[0].table2, query->join[0].column2);
 	for (int i = 1; i < query->join_size; i++)
 		printf("&%ld.%ld=%ld.%ld", query->join[i].table1, query->join[i].column1, query->join[i].table2, query->join[i].column2);
+	//filters
 	if (query->filter_size) {
 		if (query->join_size) putchar('&');
 		printf("%ld.%ld%c%ld", query->filter[0].table, query->filter[0].column, query->filter[0].op, query->filter[0].number);
@@ -115,6 +130,7 @@ void print_query(query_info *query) {
 	for (int i = 1; i < query->filter_size; i++)
 		printf(" %ld.%ld%c%ld", query->filter[i].table, query->filter[i].column, query->filter[i].op, query->filter[i].number);
 	putchar('|');
+	//projections
 	if (query->proj_size)
 		printf("%ld.%ld", query->proj[0].table, query->proj[0].column);
 	for (int i = 1; i < query->proj_size; i++)
@@ -122,6 +138,7 @@ void print_query(query_info *query) {
 	putchar('\n');
 }
 
+/* Adds query to end of query list (batch). */
 void query_push(query_list *list, query_info *query) {
 	query_node* temp = malloc(sizeof(query_node));
 	temp->next = NULL;
@@ -132,6 +149,7 @@ void query_push(query_list *list, query_info *query) {
 	list->size++;
 }
 
+/* Adds batch to end of batch list. */
 void batch_push(batch_list *list, query_list *queries) {
 	if (queries == NULL)
 		return;
