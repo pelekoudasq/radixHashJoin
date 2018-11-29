@@ -14,65 +14,69 @@
 
 int32_t twoInLSB;	// 2^HASH_LSB
 
+/* First parsing through table
+ * Find hash position and increase histogram value by one
+ * From histogram to summarised histogram
+ * Second parsing through table, new relation table
+ * Find hash position
+ * Copy that tuple to the new table in the right position
+ * Increase position for current hash result value 
+ */
+
 void hash_relation(relation_info* newRel, relation *rel){
 	
 	newRel->histogram = calloc(twoInLSB, sizeof(int32_t));
-	/* First parsing through table */
 	for (int32_t i = 0; i < rel->num_tuples; i++){
-		/* Find hash position and increase histogram value by one */
 		int32_t position = rel->tuples[i].payload & (twoInLSB-1);
 		newRel->histogram[position]++;
 	}
 
-	/* From histogram to summarised histogram */
 	int32_t *sumHistogram = malloc(twoInLSB * sizeof(int32_t));
 	sumHistogram[0] = 0;
 	for (int i = 1; i < twoInLSB; i++)
 		sumHistogram[i] = sumHistogram[i-1] + newRel->histogram[i-1];
 
-	/* Second parsing through table, new relation table */
 	newRel->tups.num_tuples = rel->num_tuples;
 	newRel->tups.tuples = malloc((rel->num_tuples)*sizeof(tuple));
 	for (int32_t i = 0; i < rel->num_tuples; i++){
-		/* Find hash position */
 		int32_t position = rel->tuples[i].payload & (twoInLSB-1);
-		/* Copy that tuple to the new table in the right position */
 		memcpy(newRel->tups.tuples+sumHistogram[position], &rel->tuples[i], sizeof(tuple));
-		/* Increase position for current hash result value */
 		sumHistogram[position]++;
 	}
 	free(sumHistogram);
 }
 
+/* hash small
+ * make chain array
+ * Parse through big bucket, join with small
+ * Add resulting RowIDs to list
+ * always put key of array R first and then key of array S
+ */
+
 void join_buckets(result* list, relation_info* small, relation_info* big, int begSmall, int begBig, int bucketNo, int orderFlag) {
 	int hashValue = next_prime(small->histogram[bucketNo]);
 	
-	/* hash small */
 	int32_t* bucket = malloc(hashValue * sizeof(int32_t));
 	for (int i = 0; i < hashValue; i++)
 		bucket[i] = -1;
 
-	/* make chain array */
 	int32_t* chain = malloc(small->histogram[bucketNo] * sizeof(int32_t));
 	int endSmall = begSmall + small->histogram[bucketNo];
 
 	for (int32_t i = begSmall; i < endSmall; i++){
-
 		int32_t position = (small->tups.tuples[i].payload) % hashValue;
 		int previousValue = bucket[position];
 		bucket[position] = i-begSmall;
 		chain[i-begSmall] = previousValue;
 	}
 	int endBig = begBig + big->histogram[bucketNo];
-	
-	/*Parse through big bucket, join with small */
+
 	for (int32_t i = begBig; i < endBig; i++) {
 		int bigHash = (big->tups.tuples[i].payload) % hashValue;
 		int32_t position = bucket[bigHash];
 		while (position != -1) {
 			if (big->tups.tuples[i].payload == small->tups.tuples[position+begSmall].payload) {
-				/* Add resulting RowIDs to list */
-				if (orderFlag)		/* always put key of array R first and then key of array S */
+				if (orderFlag)		
 					add_result(list, big->tups.tuples[i].key, small->tups.tuples[position+begSmall].key);
 				else
 					add_result(list, small->tups.tuples[position+begSmall].key, big->tups.tuples[i].key);
@@ -83,6 +87,11 @@ void join_buckets(result* list, relation_info* small, relation_info* big, int be
 	free(bucket);
 	free(chain);
 }
+
+/* pass the two relations through the first hash
+ * for every backet, join them
+ * return the results
+ */
 
 result* RadixHashJoin(relation *relR, relation *relS) {
 	twoInLSB = pow2(HASH_LSB);
@@ -95,7 +104,6 @@ result* RadixHashJoin(relation *relR, relation *relS) {
 	result* list = malloc(sizeof(result));
 	init_list(list);
 
-	/* Join buckets */
 	int begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
 		if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
