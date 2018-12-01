@@ -102,28 +102,24 @@ int main(int argc, char const *argv[]){
 	char *lineptr = NULL;
 	size_t n = 0;
 	ssize_t lineSize;
-	fileList *list = NULL;
-	int listSize = 0;
 
 	//get every filepath, push it to the list
+	std::vector<char*> list;
 	while ( (lineSize = getline(&lineptr, &n, stdin)) != -1 && strcmp(lineptr, "Done\n") != 0 ){
 		lineptr[lineSize-1] = '\0';
 		char *filepath = new char[lineSize];
 		strcpy(filepath, lineptr);
-		list = push_file(list, filepath);
-		listSize++;
+		list.push_back(filepath);
 	}
 
 	if (lineptr != NULL)
 		free(lineptr);
 
-	relList *relations = new relList[listSize];
+	relList *relations = new relList[list.size()];
 
 	//for every filepath, open file and get contents
-	for (int i = listSize-1; i >= 0; i--){
-
-		char *filepath;
-		list = pop_file(list, &filepath);
+	size_t i = 0;
+	for (auto&& filepath : list){
 		int fileDesc = open(filepath, O_RDONLY);
 		delete[] filepath;
 		read(fileDesc, &relations[i].num_tuples, sizeof(uint64_t));
@@ -131,6 +127,7 @@ int main(int argc, char const *argv[]){
 		relations[i].value = (uint64_t*)mmap(NULL, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fileDesc, 0);
 		relations[i].value += 2;			//file offset
 		close(fileDesc);
+		i++;
 	}
 
 	// for (int i = 0; i < listSize; ++i){
@@ -148,7 +145,6 @@ int main(int argc, char const *argv[]){
 	//parse batch
 	std::vector<std::vector<query_info>> batches;
 	while (!feof(stdin)) {
-		printf("NEW Batch\n");
 		std::vector<query_info> queries;
 		while (1) {
 			query_info query;
@@ -165,10 +161,11 @@ int main(int argc, char const *argv[]){
 			read_projections(&query);
 			queries.push_back(query);
 		}
-		if (!queries.empty())
+		if (!queries.empty()) {
+			printf("NEW Batch\n");
 			batches.push_back(queries);
+		}
 	}
-
 	//for every batch, execute queries
 	for (auto&& queries : batches) {
 		for (auto&& query : queries) {
@@ -177,7 +174,7 @@ int main(int argc, char const *argv[]){
 		printf("F\n");
 	}
 
-	for (int i = 0; i < listSize; ++i){
+	for (int i = 0; i < list.size(); ++i){
 		munmap(relations[i].value, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t));
 	}
 	delete[] relations;
