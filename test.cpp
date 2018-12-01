@@ -1,10 +1,10 @@
-#include <ctype.h>
+#include <cctype>
 #include <fcntl.h>
-#include <limits.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <climits>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <sys/errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -21,23 +21,46 @@
 
 bool **run_filters(query_info& query, relList *relations) {
 	std::vector<filter_info>& filter = query.filter;
-	bool **filter_results = (bool**)calloc(sizeof(bool*), query.table.size());
+	bool **disqualified = (bool**)calloc(sizeof(bool*), query.table.size());
 	for (auto&& f : filter) {
 		uint64_t table_number = query.table[f.table];
 		uint64_t column_number = f.column;
-		if (filter_results[f.table] == NULL)
-			filter_results[f.table] = new bool[relations[table_number].num_tuples];
+		if (disqualified[f.table] == NULL)
+			disqualified[f.table] = new bool[relations[table_number].num_tuples](); // sets all to false
+		size_t offset = column_number*relations[table_number].num_tuples;
 		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
-			uint64_t value = relations[table_number].value[column_number*relations[table_number].num_tuples+j];
-			if (f.op == '>')
-				filter_results[f.table][j] = (value > f.number);
-			else if (f.op == '<')
-				filter_results[f.table][j] = (value < f.number);
-			else if (f.op == '=')
-				filter_results[f.table][j] = (value == f.number);
+			uint64_t value = relations[table_number].value[offset+j];
+			if (disqualified[f.table][j]) {
+				if (f.op == '>')
+					disqualified[f.table][j] = !(value > f.number);
+				else if (f.op == '<')
+					disqualified[f.table][j] = !(value < f.number);
+				else if (f.op == '=')
+					disqualified[f.table][j] = !(value == f.number);
+			}
 		}
 	}
-	return filter_results;
+	return disqualified;
+}
+
+set<uint64_t>* run_filters(query_info& query, relList *relations) {
+	std::vector<filter_info>& filter = query.filter;
+	set<uint64_t>* disqualified = new set<uint64_t>[query.table.size()];
+	for (auto&& f : filter) {
+		uint64_t table_number = query.table[f.table];
+		uint64_t column_number = f.column;
+		size_t offset = column_number*relations[table_number].num_tuples;
+		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
+			uint64_t value = relations[table_number].value[offset+j];
+			if (f.op == '>' && !(value > f.number) )
+				disqualified[f.table].insert(j);
+			else if (f.op == '<' && !(value < f.number) )
+					disqualified[f.table].insert(j);
+			else if (f.op == '=' && !(value == f.number) )
+					disqualified[f.table].insert(j);
+		}
+	}
+	return disqualified;
 }
 
 void parse_table(join_info *join, relList *relations, uint64_t table_number) {
@@ -53,8 +76,10 @@ void parse_table(join_info *join, relList *relations, uint64_t table_number) {
 	}
 }
 
+
 void run_joins(query_info* query, relList *relations) {
 	std::vector<join_info>& join = query->join;
+
 	for (auto&& j : join) {
 		if ( j.table1 == j.table2 ){
 			uint64_t table_number = query->table[j.table1];
@@ -77,7 +102,9 @@ void run_joins(query_info* query, relList *relations) {
 //	     -NULL
 
 void execute(query_info& query, relList *relations) {
+	uint64_t **intermediate = new uint64_t*[query.table.size()]; //all null
 	bool **filter_results = run_filters(query, relations);
+	for (table)
 	/*for (int i = 0; i < query->table_size; ++i) {
 		uint64_t table_number = query->table[i];
 		for (int j = 0; j <  relations[table_number].num_tuples; ++j) {
