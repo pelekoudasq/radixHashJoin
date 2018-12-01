@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <unordered_set>
+
 #include <sys/errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -19,8 +21,10 @@
 #include "file_list/fileList.h"
 #include "query_handler/query.h"
 
-bool **run_filters(query_info& query, relList *relations) {
-	std::vector<filter_info>& filter = query.filter;
+using namespace std;
+
+bool **run_filters(query_info& query, vector<relList>& relations) {
+	vector<filter_info>& filter = query.filter;
 	bool **disqualified = (bool**)calloc(sizeof(bool*), query.table.size());
 	for (auto&& f : filter) {
 		uint64_t table_number = query.table[f.table];
@@ -43,30 +47,36 @@ bool **run_filters(query_info& query, relList *relations) {
 	return disqualified;
 }
 
-set<uint64_t>* run_filters(query_info& query, relList *relations) {
-	std::vector<filter_info>& filter = query.filter;
-	set<uint64_t>* disqualified = new set<uint64_t>[query.table.size()];
+unordered_set<uint64_t>* run_filters2(query_info& query, vector<relList>& relations) {
+	vector<filter_info>& filter = query.filter;
+	unordered_set<uint64_t>* disqualified = new unordered_set<uint64_t>[query.table.size()];
 	for (auto&& f : filter) {
 		uint64_t table_number = query.table[f.table];
 		uint64_t column_number = f.column;
 		size_t offset = column_number*relations[table_number].num_tuples;
 		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
 			uint64_t value = relations[table_number].value[offset+j];
-			if (f.op == '>' && !(value > f.number) )
-				disqualified[f.table].insert(j);
-			else if (f.op == '<' && !(value < f.number) )
+			if (f.op == '>') {
+				if ( !(value > f.number) )
 					disqualified[f.table].insert(j);
-			else if (f.op == '=' && !(value == f.number) )
+			}
+			else if (f.op == '<') {
+				if ( !(value < f.number) )
 					disqualified[f.table].insert(j);
+			}
+			else if (f.op == '=') {
+				if ( !(value == f.number) )
+					disqualified[f.table].insert(j);
+			}
 		}
 	}
 	return disqualified;
 }
 
-void parse_table(join_info *join, relList *relations, uint64_t table_number) {
+void parse_table(join_info& join, relList *relations, uint64_t table_number) {
 
-	uint64_t column1_number = join->column1;
-	uint64_t column2_number = join->column2;
+	uint64_t column1_number = join.column1;
+	uint64_t column2_number = join.column2;
 	for(size_t i = 0; i < relations[table_number].num_tuples; i++){
 		uint64_t value1 = relations[table_number].value[column1_number*relations[table_number].num_tuples+i];
 		uint64_t value2 = relations[table_number].value[column2_number*relations[table_number].num_tuples+i];
@@ -76,14 +86,13 @@ void parse_table(join_info *join, relList *relations, uint64_t table_number) {
 	}
 }
 
-
 void run_joins(query_info* query, relList *relations) {
-	std::vector<join_info>& join = query->join;
+	vector<join_info>& join = query->join;
 
 	for (auto&& j : join) {
 		if ( j.table1 == j.table2 ){
 			uint64_t table_number = query->table[j.table1];
-			parse_table(&j, relations, table_number);
+			parse_table(j, relations, table_number);
 		} else {
 			uint64_t table1_number = query->table[j.table1];
 			uint64_t column1_number = j.column1;
@@ -101,95 +110,58 @@ void run_joins(query_info* query, relList *relations) {
 //	{ , , }
 //	     -NULL
 
-void execute(query_info& query, relList *relations) {
+void execute(query_info& query, vector<relList>& relations) {
+	bool **disqualified = run_filters(query, relations);
+	unordered_set<uint64_t>* disqualified2 = run_filters2(query, relations);
 	uint64_t **intermediate = new uint64_t*[query.table.size()]; //all null
-	bool **filter_results = run_filters(query, relations);
-	for (table)
-	/*for (int i = 0; i < query->table_size; ++i) {
-		uint64_t table_number = query->table[i];
-		for (int j = 0; j <  relations[table_number].num_tuples; ++j) {
-			if (filter_results[i] == NULL)
-				printf("1 ");
-			else
-				printf("%d ", filter_results[i][j]);
-		}
-		printf("\n");
-	}*/
 	//run_joins();
 	for (size_t i = 0; i < query.table.size(); i++) {
-		if (filter_results[i] != NULL)
-			delete[] filter_results[i];
+		if (disqualified[i] != NULL)
+			delete[] disqualified[i];
 	}
-	free(filter_results);
-	print_query(query);
+	free(disqualified);
+	delete[] disqualified2;
 }
 
 int main(int argc, char const *argv[]){
-
 	char *lineptr = NULL;
 	size_t n = 0;
 	ssize_t lineSize;
 
-	//get every filepath, push it to the list
-	std::vector<char*> list;
+	//get every filepath
+	vector<relList> relations;
 	while ( (lineSize = getline(&lineptr, &n, stdin)) != -1 && strcmp(lineptr, "Done\n") != 0 ){
 		lineptr[lineSize-1] = '\0';
-		char *filepath = new char[lineSize];
-		strcpy(filepath, lineptr);
-		list.push_back(filepath);
+		//open file and get contents
+		relList relation;
+		int fileDesc = open(lineptr, O_RDONLY);
+		read(fileDesc, &relation.num_tuples, sizeof(uint64_t));
+		read(fileDesc, &relation.num_columns, sizeof(uint64_t));
+		relation.value = (uint64_t*)mmap(NULL, relation.num_tuples*relation.num_columns*sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fileDesc, 0);
+		relation.value += 2;			//file offset
+		close(fileDesc);
+		relations.push_back(relation);
 	}
-
 	if (lineptr != NULL)
 		free(lineptr);
 
-	relList *relations = new relList[list.size()];
-
-	//for every filepath, open file and get contents
-	size_t i = 0;
-	for (auto&& filepath : list){
-		int fileDesc = open(filepath, O_RDONLY);
-		delete[] filepath;
-		read(fileDesc, &relations[i].num_tuples, sizeof(uint64_t));
-		read(fileDesc, &relations[i].num_columns, sizeof(uint64_t));
-		relations[i].value = (uint64_t*)mmap(NULL, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fileDesc, 0);
-		relations[i].value += 2;			//file offset
-		close(fileDesc);
-		i++;
-	}
-
-	// for (int i = 0; i < listSize; ++i){
-	// 	//printf("%ld, %ld\n", relations[i].num_tuples, relations[i].num_columns);
-	// 	for (int j = 0; j < relations[i].num_tuples; ++j){
-	// 		for (int k = 0; k < relations[i].num_columns; ++k)
-	// 		{
-	// 			printf("%ld|", relations[i].value[k*relations[i].num_tuples+j]);
-	// 		}
-	// 		printf("\n");
-
-	// 	}
-	// }
+	//print_relations(relations);
 
 	//parse batch
-	std::vector<std::vector<query_info>> batches;
+	vector<vector<query_info>> batches;
 	while (!feof(stdin)) {
-		std::vector<query_info> queries;
-		while (1) {
+		vector<query_info> queries;
+		while (true) {
 			query_info query;
-			int returnValue = read_relations(&query);
-			//check return value for end of file or end of batch
-			if (returnValue == EOF) {
-				getchar();
-				break;
-			} else if (returnValue){
-				getchar();							//get \n and continue to next batch
+			if (read_relations(query)){
+				getchar();							//get new line
 				break;
 			}
-			read_predicates(&query);
-			read_projections(&query);
+			read_predicates(query);
+			read_projections(query);
 			queries.push_back(query);
 		}
 		if (!queries.empty()) {
-			printf("NEW Batch\n");
 			batches.push_back(queries);
 		}
 	}
@@ -198,13 +170,12 @@ int main(int argc, char const *argv[]){
 		for (auto&& query : queries) {
 			execute(query, relations);
 		}
-		printf("F\n");
 	}
+	print_batches(batches);
 
-	for (int i = 0; i < list.size(); ++i){
-		munmap(relations[i].value, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t));
+	for (auto&& relation : relations){
+		munmap(relation.value, relation.num_tuples*relation.num_columns*sizeof(uint64_t));
 	}
-	delete[] relations;
 
 	return 0;
 }

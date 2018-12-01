@@ -26,15 +26,17 @@ uint64_t read_number(int ch, int* delim){
 	return num;
 }
 
-/* Gets the tables needed for the query. Also, checks for end of input and returns accordingly.
-	Takes the query struct as argument to update.*/
-int read_relations(query_info *query){
+/* Gets the tables needed for the query.
+ * Also, checks for end of input and returns accordingly.
+ * Takes the query struct as argument to update.
+ * Returns true on batch end.
+ */
+bool read_relations(query_info& query){
 	int ch = getchar();
 	//check if end of batch or end of file
-	if (ch == 'F' ) return 1;
-	if (ch == EOF) return EOF;
+	if (ch == 'F' || ch == EOF) return true;
 
-	std::vector<uint64_t>& table = query->table;
+	std::vector<uint64_t>& table = query.table;
 	//push_table
 	table.push_back(read_number(ch, &ch));
 
@@ -43,14 +45,14 @@ int read_relations(query_info *query){
 		ch = getchar();
 		table.push_back(read_number(ch, &ch));
 	}
-	return 0;
+	return false;
 }
 
 /* Reads predicates for query. Stores filters and joins separetely.
 	Takes the query struct as argument to update.*/
-void read_predicates(query_info *query){
-	std::vector<join_info>& join = query->join;
-	std::vector<filter_info>& filter = query->filter;
+void read_predicates(query_info& query){
+	std::vector<join_info>& join = query.join;
+	std::vector<filter_info>& filter = query.filter;
 	int ch = '\0';
 	while(ch != '|'){										//for every predicate
 		int op;
@@ -79,8 +81,8 @@ void read_predicates(query_info *query){
 
 /* Gets projections required.
 	Takes the query struct as argument to update. */
-void read_projections(query_info *query){
-	std::vector<proj_info>& proj = query->proj;
+void read_projections(query_info& query){
+	std::vector<proj_info>& proj = query.proj;
 	int ch = '\0';
 	while(ch != '\n'){										//while not end of line
 		uint64_t table = read_number(getchar(), &ch);		//read number(table), ignore->(.) that follows it
@@ -119,28 +121,4 @@ void print_query(query_info& query) {
 	for (int i = 1; i < query.proj.size(); i++)
 		printf(" %ld.%ld", query.proj[i].table, query.proj[i].column);
 	putchar('\n');
-}
-
-/* Adds query to end of query list (batch). */
-void query_push(query_list *list, query_info *query) {
-	query_node* temp = (query_node*)malloc(sizeof(query_node));
-	temp->next = NULL;
-	temp->query = query;
-	if (list->head == NULL) list->head = temp;
-	else list->tail->next = temp;
-	list->tail = temp;
-	list->size++;
-}
-
-/* Adds batch to end of batch list. */
-void batch_push(batch_list *list, query_list *queries) {
-	if (queries == NULL)
-		return;
-	batch_node* temp = (batch_node*)malloc(sizeof(batch_node));
-	temp->next = NULL;
-	temp->queries = queries;
-	if (list->head == NULL) list->head = temp;
-	else list->tail->next = temp;
-	list->tail = temp;
-	list->size++;
 }
