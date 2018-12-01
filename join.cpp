@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cstdint>
 
 #include "structs.h"
 #include "result_list/resultList.h"
@@ -20,11 +20,11 @@ int32_t twoInLSB;	// 2^HASH_LSB
  * Second parsing through table, new relation table
  * Find hash position
  * Copy that tuple to the new table in the right position
- * Increase position for current hash result value 
+ * Increase position for current hash result value
  */
 
 void hash_relation(relation_info* newRel, relation *rel){
-	
+
 	newRel->histogram = (int32_t*)calloc(twoInLSB, sizeof(int32_t));
 	for (int32_t i = 0; i < rel->num_tuples; i++){
 		int32_t position = rel->tuples[i].payload & (twoInLSB-1);
@@ -55,7 +55,7 @@ void hash_relation(relation_info* newRel, relation *rel){
 
 void join_buckets(result* list, relation_info* small, relation_info* big, int begSmall, int begBig, int bucketNo, int orderFlag) {
 	int hashValue = next_prime(small->histogram[bucketNo]);
-	
+
 	int32_t* bucket = (int32_t*)malloc(hashValue * sizeof(int32_t));
 	for (int i = 0; i < hashValue; i++)
 		bucket[i] = -1;
@@ -76,7 +76,7 @@ void join_buckets(result* list, relation_info* small, relation_info* big, int be
 		int32_t position = bucket[bigHash];
 		while (position != -1) {
 			if (big->tups.tuples[i].payload == small->tups.tuples[position+begSmall].payload) {
-				if (orderFlag)		
+				if (orderFlag)
 					add_result(list, big->tups.tuples[i].key, small->tups.tuples[position+begSmall].key);
 				else
 					add_result(list, small->tups.tuples[position+begSmall].key, big->tups.tuples[i].key);
