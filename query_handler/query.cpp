@@ -34,7 +34,7 @@ int read_relations(query_info *query){
 	if (ch == 'F' ) return 1;
 	if (ch == EOF) return EOF;
 
-	uint64_t *table = malloc(sizeof(uint64_t)*4);
+	uint64_t *table = (uint64_t*)malloc(sizeof(uint64_t)*4);
 	size_t table_size = 0;
 	//push_table
 	table[table_size] = read_number(ch, &ch);
@@ -54,8 +54,8 @@ int read_relations(query_info *query){
 /* Reads predicates for query. Stores filters and joins separetely.
 	Takes the query struct as argument to update.*/
 void read_predicates(query_info *query){
-	join_info *join = malloc(sizeof(join_info)*4);
-	filter_info *filter = malloc(sizeof(filter_info)*4);
+	join_info *join = (join_info*)malloc(sizeof(join_info)*4);
+	filter_info *filter = (filter_info*)malloc(sizeof(filter_info)*4);
 	size_t join_size = 0;
 	size_t filter_size = 0;
 	int ch = '\0';
@@ -89,7 +89,7 @@ void read_predicates(query_info *query){
 /* Gets projections required.
 	Takes the query struct as argument to update. */
 void read_projections(query_info *query){
-	query->proj = malloc(sizeof(proj_info)*4);
+	query->proj = (proj_info*)malloc(sizeof(proj_info)*4);
 	query->proj_size = 0;
 	int ch = '\0';
 	while(ch != '\n'){										//while not end of line
@@ -140,7 +140,7 @@ void print_query(query_info *query) {
 
 /* Adds query to end of query list (batch). */
 void query_push(query_list *list, query_info *query) {
-	query_node* temp = malloc(sizeof(query_node));
+	query_node* temp = (query_node*)malloc(sizeof(query_node));
 	temp->next = NULL;
 	temp->query = query;
 	if (list->head == NULL) list->head = temp;
@@ -153,7 +153,7 @@ void query_push(query_list *list, query_info *query) {
 void batch_push(batch_list *list, query_list *queries) {
 	if (queries == NULL)
 		return;
-	batch_node* temp = malloc(sizeof(batch_node));
+	batch_node* temp = (batch_node*)malloc(sizeof(batch_node));
 	temp->next = NULL;
 	temp->queries = queries;
 	if (list->head == NULL) list->head = temp;

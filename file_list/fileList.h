@@ -1,10 +1,10 @@
 #ifndef _FILELIST_
 #define _FILELIST_
 
-typedef struct fileList{
+struct fileList{
 	char *filepath;
-	struct fileList *next;
-}fileList;
+	fileList *next;
+};
 
 fileList *push_file(fileList *, char *);
 fileList *pop_file(fileList *, char **);

@@ -8,7 +8,7 @@
 
 fileList *push_file(fileList *head, char *filepath){
 	
-	fileList *newNode = malloc(sizeof(fileList));
+	fileList *newNode = (fileList*)malloc(sizeof(fileList));
 	newNode->filepath = filepath;
 	newNode->next = head;
 	return newNode;

@@ -35,7 +35,7 @@ void add_result(result* list, int32_t key1, int32_t key2) {
 
     /*if page is full, get more space */
     if (list->size == list->capacity) {
-        bucket_info* temp = malloc(1024*1024);
+        bucket_info* temp = (bucket_info*)malloc(1024*1024);
         temp->next = list->head;
 
         list->head = temp;

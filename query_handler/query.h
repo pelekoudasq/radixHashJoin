@@ -1,26 +1,26 @@
 #ifndef _QUERY_
 #define _QUERY_
 
-typedef struct {
+struct join_info{
 	uint64_t table1;
 	uint64_t column1;
 	uint64_t table2;
 	uint64_t column2;
-} join_info;
+};
 
-typedef struct {
+struct filter_info{
 	uint64_t table;
 	uint64_t column;
 	char op;
 	uint64_t number;
-} filter_info;
+};
 
-typedef struct {
+struct proj_info{
 	uint64_t table;
 	uint64_t column;
-} proj_info;
+};
 
-typedef struct {
+struct query_info{
 	uint64_t* table;
 	join_info* join;
 	filter_info* filter;
@@ -29,29 +29,29 @@ typedef struct {
 	size_t join_size;
 	size_t filter_size;
 	size_t proj_size;
-} query_info;
+};
 
-typedef struct query_node {
-	struct query_node* next;
+struct query_node {
+	query_node* next;
 	query_info* query;
-} query_node;
+};
 
-typedef struct {
+struct query_list{
 	query_node* head;
 	query_node* tail;
 	size_t size;
-} query_list;
+};
 
-typedef struct batch_node {
-	struct batch_node* next;
+struct batch_node {
+	batch_node* next;
 	query_list* queries;
-} batch_node;
+};
 
-typedef struct {
+struct batch_list{
 	batch_node* head;
 	batch_node* tail;
 	size_t size;
-} batch_list;
+};
 
 uint64_t read_number(int ch, int *);
 int read_relations(query_info *);

@@ -23,12 +23,12 @@
 int **run_filters(query_info* query, relList *relations) {
 	
 	filter_info* filter = query->filter;
-	int **filter_results = calloc(sizeof(int*), query->table_size);
+	int **filter_results = (int**)calloc(sizeof(int*), query->table_size);
 	for (size_t i = 0; i < query->filter_size; i++){
 		uint64_t table_number = query->table[filter->table];
 		uint64_t column_number = filter->column;
 		if (filter_results[filter->table] == NULL)
-			filter_results[filter->table] = malloc(sizeof(int)*relations[table_number].num_tuples);
+			filter_results[filter->table] = (int*)malloc(sizeof(int)*relations[table_number].num_tuples);
 		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
 			uint64_t value = relations[table_number].value[column_number*relations[table_number].num_tuples+j];
 			if (filter->op == '>')
@@ -105,7 +105,7 @@ int main(int argc, char const *argv[]){
 	//get every filepath, push it to the list
 	while ( (lineSize = getline(&lineptr, &n, stdin)) != -1 && strcmp(lineptr, "Done\n") != 0 ){
 		lineptr[lineSize-1] = '\0';
-		char *filepath = malloc(lineSize);
+		char *filepath = (char*)malloc(lineSize);
 		strcpy(filepath, lineptr);
 		list = push_file(list, filepath);
 		listSize++;
@@ -114,7 +114,7 @@ int main(int argc, char const *argv[]){
 	if( lineptr != NULL )
 		free(lineptr);
 
-	relList *relations = malloc(sizeof(relList)*listSize);
+	relList *relations = (relList*)malloc(sizeof(relList)*listSize);
 	
 	//for every filepath, open file and get contents
 	for (int i = listSize-1; i >= 0; i--){
@@ -125,7 +125,7 @@ int main(int argc, char const *argv[]){
 		free(filepath);
 		read(fileDesc, &relations[i].num_tuples, sizeof(uint64_t));
 		read(fileDesc, &relations[i].num_columns, sizeof(uint64_t));
-		relations[i].value = mmap(NULL, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fileDesc, 0);
+		relations[i].value = (uint64_t*)mmap(NULL, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fileDesc, 0);
 		relations[i].value += 2;
 		close(fileDesc);
 	}
@@ -148,11 +148,11 @@ int main(int argc, char const *argv[]){
 	batches.head = NULL;
 	while (!feof(stdin)) {
 		printf("NEW Batch\n");
-		query_list* queries = malloc(sizeof(query_list));
+		query_list* queries = (query_list*)malloc(sizeof(query_list));
 		queries->size = 0;
 		queries->head = NULL;
 		while (1) {
-			query_info* query = malloc(sizeof(query_info));
+			query_info* query = (query_info*)malloc(sizeof(query_info));
 			int returnValue = read_relations(query);
 			//check return value for end of file or end of batch
 			if (returnValue == EOF) {

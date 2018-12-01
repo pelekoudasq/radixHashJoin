@@ -25,19 +25,19 @@ int32_t twoInLSB;	// 2^HASH_LSB
 
 void hash_relation(relation_info* newRel, relation *rel){
 	
-	newRel->histogram = calloc(twoInLSB, sizeof(int32_t));
+	newRel->histogram = (int32_t*)calloc(twoInLSB, sizeof(int32_t));
 	for (int32_t i = 0; i < rel->num_tuples; i++){
 		int32_t position = rel->tuples[i].payload & (twoInLSB-1);
 		newRel->histogram[position]++;
 	}
 
-	int32_t *sumHistogram = malloc(twoInLSB * sizeof(int32_t));
+	int32_t *sumHistogram = (int32_t*)malloc(twoInLSB * sizeof(int32_t));
 	sumHistogram[0] = 0;
 	for (int i = 1; i < twoInLSB; i++)
 		sumHistogram[i] = sumHistogram[i-1] + newRel->histogram[i-1];
 
 	newRel->tups.num_tuples = rel->num_tuples;
-	newRel->tups.tuples = malloc((rel->num_tuples)*sizeof(tuple));
+	newRel->tups.tuples = (tuple*)malloc((rel->num_tuples)*sizeof(tuple));
 	for (int32_t i = 0; i < rel->num_tuples; i++){
 		int32_t position = rel->tuples[i].payload & (twoInLSB-1);
 		memcpy(newRel->tups.tuples+sumHistogram[position], &rel->tuples[i], sizeof(tuple));
@@ -56,11 +56,11 @@ void hash_relation(relation_info* newRel, relation *rel){
 void join_buckets(result* list, relation_info* small, relation_info* big, int begSmall, int begBig, int bucketNo, int orderFlag) {
 	int hashValue = next_prime(small->histogram[bucketNo]);
 	
-	int32_t* bucket = malloc(hashValue * sizeof(int32_t));
+	int32_t* bucket = (int32_t*)malloc(hashValue * sizeof(int32_t));
 	for (int i = 0; i < hashValue; i++)
 		bucket[i] = -1;
 
-	int32_t* chain = malloc(small->histogram[bucketNo] * sizeof(int32_t));
+	int32_t* chain = (int32_t*)malloc(small->histogram[bucketNo] * sizeof(int32_t));
 	int endSmall = begSmall + small->histogram[bucketNo];
 
 	for (int32_t i = begSmall; i < endSmall; i++){
@@ -101,7 +101,7 @@ result* RadixHashJoin(relation *relR, relation *relS) {
 	hash_relation(&relRhashed, relR);
 	hash_relation(&relShashed, relS);
 
-	result* list = malloc(sizeof(result));
+	result* list = (result*)malloc(sizeof(result));
 	init_list(list);
 
 	int begR = 0, begS = 0;
