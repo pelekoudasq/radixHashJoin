@@ -1,13 +1,13 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cstdint>
 
 #include "fileList.h"
 
 
 fileList *push_file(fileList *head, char *filepath){
-	
+
 	fileList *newNode = (fileList*)malloc(sizeof(fileList));
 	newNode->filepath = filepath;
 	newNode->next = head;

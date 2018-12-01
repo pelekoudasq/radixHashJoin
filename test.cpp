@@ -19,26 +19,23 @@
 #include "file_list/fileList.h"
 #include "query_handler/query.h"
 
-
-int **run_filters(query_info* query, relList *relations) {
-	
-	filter_info* filter = query->filter;
-	int **filter_results = (int**)calloc(sizeof(int*), query->table_size);
-	for (size_t i = 0; i < query->filter_size; i++){
-		uint64_t table_number = query->table[filter->table];
-		uint64_t column_number = filter->column;
-		if (filter_results[filter->table] == NULL)
-			filter_results[filter->table] = (int*)malloc(sizeof(int)*relations[table_number].num_tuples);
+bool **run_filters(query_info& query, relList *relations) {
+	std::vector<filter_info>& filter = query.filter;
+	bool **filter_results = (bool**)calloc(sizeof(bool*), query.table.size());
+	for (auto&& f : filter) {
+		uint64_t table_number = query.table[f.table];
+		uint64_t column_number = f.column;
+		if (filter_results[f.table] == NULL)
+			filter_results[f.table] = new bool[relations[table_number].num_tuples];
 		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
 			uint64_t value = relations[table_number].value[column_number*relations[table_number].num_tuples+j];
-			if (filter->op == '>')
-				filter_results[filter->table][j] = (value > filter->number);
-			else if (filter->op == '<')
-				filter_results[filter->table][j] = (value < filter->number);
-			else if (filter->op == '=')
-				filter_results[filter->table][j] = (value = filter->number);
+			if (f.op == '>')
+				filter_results[f.table][j] = (value > f.number);
+			else if (f.op == '<')
+				filter_results[f.table][j] = (value < f.number);
+			else if (f.op == '=')
+				filter_results[f.table][j] = (value == f.number);
 		}
-		filter++;
 	}
 	return filter_results;
 }
@@ -57,29 +54,30 @@ void parse_table(join_info *join, relList *relations, uint64_t table_number) {
 }
 
 void run_joins(query_info* query, relList *relations) {
-
-	join_info *join = query->join;
-	for (size_t i = 0; i < query->join_size; i++) {
-		// if self join
-		if ( join->table1 == join->table2 ){
-			uint64_t table_number = query->table[join->table1];
-			parse_table(join, relations, table_number);
+	std::vector<join_info>& join = query->join;
+	for (auto&& j : join) {
+		if ( j.table1 == j.table2 ){
+			uint64_t table_number = query->table[j.table1];
+			parse_table(&j, relations, table_number);
 		} else {
-			uint64_t table1_number = query->table[join->table1];
-			uint64_t column1_number = join->column1;
-			uint64_t table2_number = query->table[join->table2];
-			uint64_t column2_number = join->column2;
+			uint64_t table1_number = query->table[j.table1];
+			uint64_t column1_number = j.column1;
+			uint64_t table2_number = query->table[j.table2];
+			uint64_t column2_number = j.column2;
 			//get rowids for these tables from intermediate results, if they exist
 			//create relations to send to RadixHashJoin
 			//send relations to RadxHashJoin
 			//get results to intermediate
 		}
-		join++;
 	}
 }
 
-void execute(query_info* query, relList *relations) {
-	int **filter_results = run_filters(query, relations);
+// 	3 0 1|0.2=1.0&0.1=2.0&0.2>3499|1.2 0.1
+//	{ , , }
+//	     -NULL
+
+void execute(query_info& query, relList *relations) {
+	bool **filter_results = run_filters(query, relations);
 	/*for (int i = 0; i < query->table_size; ++i) {
 		uint64_t table_number = query->table[i];
 		for (int j = 0; j <  relations[table_number].num_tuples; ++j) {
@@ -91,11 +89,16 @@ void execute(query_info* query, relList *relations) {
 		printf("\n");
 	}*/
 	//run_joins();
+	for (size_t i = 0; i < query.table.size(); i++) {
+		if (filter_results[i] != NULL)
+			delete[] filter_results[i];
+	}
+	free(filter_results);
 	print_query(query);
 }
 
 int main(int argc, char const *argv[]){
-	
+
 	char *lineptr = NULL;
 	size_t n = 0;
 	ssize_t lineSize;
@@ -105,28 +108,28 @@ int main(int argc, char const *argv[]){
 	//get every filepath, push it to the list
 	while ( (lineSize = getline(&lineptr, &n, stdin)) != -1 && strcmp(lineptr, "Done\n") != 0 ){
 		lineptr[lineSize-1] = '\0';
-		char *filepath = (char*)malloc(lineSize);
+		char *filepath = new char[lineSize];
 		strcpy(filepath, lineptr);
 		list = push_file(list, filepath);
 		listSize++;
 	}
 
-	if( lineptr != NULL )
+	if (lineptr != NULL)
 		free(lineptr);
 
-	relList *relations = (relList*)malloc(sizeof(relList)*listSize);
-	
+	relList *relations = new relList[listSize];
+
 	//for every filepath, open file and get contents
 	for (int i = listSize-1; i >= 0; i--){
 
 		char *filepath;
 		list = pop_file(list, &filepath);
 		int fileDesc = open(filepath, O_RDONLY);
-		free(filepath);
+		delete[] filepath;
 		read(fileDesc, &relations[i].num_tuples, sizeof(uint64_t));
 		read(fileDesc, &relations[i].num_columns, sizeof(uint64_t));
 		relations[i].value = (uint64_t*)mmap(NULL, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fileDesc, 0);
-		relations[i].value += 2;
+		relations[i].value += 2;			//file offset
 		close(fileDesc);
 	}
 
@@ -143,52 +146,41 @@ int main(int argc, char const *argv[]){
 	// }
 
 	//parse batch
-	batch_list batches;
-	batches.size = 0;
-	batches.head = NULL;
+	std::vector<std::vector<query_info>> batches;
 	while (!feof(stdin)) {
 		printf("NEW Batch\n");
-		query_list* queries = (query_list*)malloc(sizeof(query_list));
-		queries->size = 0;
-		queries->head = NULL;
+		std::vector<query_info> queries;
 		while (1) {
-			query_info* query = (query_info*)malloc(sizeof(query_info));
-			int returnValue = read_relations(query);
+			query_info query;
+			int returnValue = read_relations(&query);
 			//check return value for end of file or end of batch
 			if (returnValue == EOF) {
 				getchar();
-				free(query);
-				free(queries);
-				queries = NULL;
 				break;
 			} else if (returnValue){
 				getchar();							//get \n and continue to next batch
 				break;
 			}
-			read_predicates(query);
-			read_projections(query);
-			query_push(queries, query);
+			read_predicates(&query);
+			read_projections(&query);
+			queries.push_back(query);
 		}
-		batch_push(&batches, queries);
+		if (!queries.empty())
+			batches.push_back(queries);
 	}
 
 	//for every batch, execute queries
-	batch_node* batch = batches.head;
-	while (batch != NULL) {
-		query_node* query = batch->queries->head;
-		while (query != NULL) {
-			execute(query->query, relations);
-			//free_query(query->query);
-			query = query->next;
+	for (auto&& queries : batches) {
+		for (auto&& query : queries) {
+			execute(query, relations);
 		}
 		printf("F\n");
-		batch = batch->next;
 	}
 
 	for (int i = 0; i < listSize; ++i){
 		munmap(relations[i].value, relations[i].num_tuples*relations[i].num_columns*sizeof(uint64_t));
 	}
-	free(relations);
+	delete[] relations;
 
 	return 0;
 }

@@ -1,6 +1,8 @@
 #ifndef _QUERY_
 #define _QUERY_
 
+#include <vector>
+
 struct join_info{
 	uint64_t table1;
 	uint64_t column1;
@@ -21,14 +23,10 @@ struct proj_info{
 };
 
 struct query_info{
-	uint64_t* table;
-	join_info* join;
-	filter_info* filter;
-	proj_info* proj;
-	size_t table_size;
-	size_t join_size;
-	size_t filter_size;
-	size_t proj_size;
+	std::vector<uint64_t> table;
+	std::vector<join_info> join;
+	std::vector<filter_info> filter;
+	std::vector<proj_info> proj;
 };
 
 struct query_node {
@@ -58,7 +56,7 @@ int read_relations(query_info *);
 void read_predicates(query_info *);
 void read_projections(query_info *);
 void free_query(query_info *);
-void print_query(query_info *);
+void print_query(query_info&);
 void query_push(query_list *, query_info *);
 void batch_push(batch_list *, query_list *);
 

@@ -1,10 +1,10 @@
-#include <ctype.h>
+#include <cctype>
+#include <climits>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
-#include <limits.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -34,30 +34,23 @@ int read_relations(query_info *query){
 	if (ch == 'F' ) return 1;
 	if (ch == EOF) return EOF;
 
-	uint64_t *table = (uint64_t*)malloc(sizeof(uint64_t)*4);
-	size_t table_size = 0;
+	std::vector<uint64_t>& table = query->table;
 	//push_table
-	table[table_size] = read_number(ch, &ch);
-	table_size++;
+	table.push_back(read_number(ch, &ch));
 
 	while(ch != '|'){
 		//push_table
 		ch = getchar();
-		table[table_size] = read_number(ch, &ch);
-		table_size++;
+		table.push_back(read_number(ch, &ch));
 	}
-	query->table = table;
-	query->table_size = table_size;
 	return 0;
 }
 
 /* Reads predicates for query. Stores filters and joins separetely.
 	Takes the query struct as argument to update.*/
 void read_predicates(query_info *query){
-	join_info *join = (join_info*)malloc(sizeof(join_info)*4);
-	filter_info *filter = (filter_info*)malloc(sizeof(filter_info)*4);
-	size_t join_size = 0;
-	size_t filter_size = 0;
+	std::vector<join_info>& join = query->join;
+	std::vector<filter_info>& filter = query->filter;
 	int ch = '\0';
 	while(ch != '|'){										//for every predicate
 		int op;
@@ -67,74 +60,64 @@ void read_predicates(query_info *query){
 		uint64_t unknown = read_number(getchar(), &ch);		//read next number after operation, save delimiter
 		if(ch == '.'){										//if delimiter is (.) we have join
 			uint64_t column2 = read_number(getchar(), &ch); //read number(column2), save what follows( & or | )
-			join[join_size].table1 = table1;
-			join[join_size].table2 = unknown;
-			join[join_size].column1 = column1;
-			join[join_size].column2 = column2;
-			join_size++;
+			join_info temp;
+			temp.table1 = table1;
+			temp.table2 = unknown;
+			temp.column1 = column1;
+			temp.column2 = column2;
+			join.push_back(temp);
 		} else {
-			filter[filter_size].table = table1;
-			filter[filter_size].column = column1;
-			filter[filter_size].op = op;
-			filter[filter_size].number = unknown;
-			filter_size++;
+			filter_info temp;
+			temp.table = table1;
+			temp.column = column1;
+			temp.op = op;
+			temp.number = unknown;
+			filter.push_back(temp);
 		}
 	}
-	query->join = join;
-	query->filter = filter;
-	query->join_size = join_size;
-	query->filter_size = filter_size;
 }
 
 /* Gets projections required.
 	Takes the query struct as argument to update. */
 void read_projections(query_info *query){
-	query->proj = (proj_info*)malloc(sizeof(proj_info)*4);
-	query->proj_size = 0;
+	std::vector<proj_info>& proj = query->proj;
 	int ch = '\0';
 	while(ch != '\n'){										//while not end of line
 		uint64_t table = read_number(getchar(), &ch);		//read number(table), ignore->(.) that follows it
 		uint64_t column = read_number(getchar(), &ch);		//read number(column), keep ch to check if \n
-		query->proj[query->proj_size].table = table;
-		query->proj[query->proj_size].column = column;
-		query->proj_size++;
+		proj_info temp;
+		temp.table = table;
+		temp.column = column;
+		proj.push_back(temp);
 	}
-}
-
-/* Frees query struct. */
-void free_query(query_info *query) {
-	free(query->table);
-	free(query->join);
-	free(query->filter);
-	free(query->proj);
 }
 
 /* Prints query struct to check if input is read correctly. Assumes joins are given before filters. */
-void print_query(query_info *query) {
+void print_query(query_info& query) {
 	//tables
-	if (query->table_size)
-		printf("%ld", query->table[0]);
-	for (int i = 1; i < query->table_size; i++)
-		printf(" %ld", query->table[i]);
+	if (query.table.size())
+		printf("%ld", query.table[0]);
+	for (int i = 1; i < query.table.size(); i++)
+		printf(" %ld", query.table[i]);
 	putchar('|');
 	//joins
-	if (query->join_size)
-		printf("%ld.%ld=%ld.%ld", query->join[0].table1, query->join[0].column1, query->join[0].table2, query->join[0].column2);
-	for (int i = 1; i < query->join_size; i++)
-		printf("&%ld.%ld=%ld.%ld", query->join[i].table1, query->join[i].column1, query->join[i].table2, query->join[i].column2);
+	if (query.join.size())
+		printf("%ld.%ld=%ld.%ld", query.join[0].table1, query.join[0].column1, query.join[0].table2, query.join[0].column2);
+	for (int i = 1; i < query.join.size(); i++)
+		printf("&%ld.%ld=%ld.%ld", query.join[i].table1, query.join[i].column1, query.join[i].table2, query.join[i].column2);
 	//filters
-	if (query->filter_size) {
-		if (query->join_size) putchar('&');
-		printf("%ld.%ld%c%ld", query->filter[0].table, query->filter[0].column, query->filter[0].op, query->filter[0].number);
+	if (query.filter.size()) {
+		if (query.join.size()) putchar('&');
+		printf("%ld.%ld%c%ld", query.filter[0].table, query.filter[0].column, query.filter[0].op, query.filter[0].number);
 	}
-	for (int i = 1; i < query->filter_size; i++)
-		printf(" %ld.%ld%c%ld", query->filter[i].table, query->filter[i].column, query->filter[i].op, query->filter[i].number);
+	for (int i = 1; i < query.filter.size(); i++)
+		printf(" %ld.%ld%c%ld", query.filter[i].table, query.filter[i].column, query.filter[i].op, query.filter[i].number);
 	putchar('|');
 	//projections
-	if (query->proj_size)
-		printf("%ld.%ld", query->proj[0].table, query->proj[0].column);
-	for (int i = 1; i < query->proj_size; i++)
-		printf(" %ld.%ld", query->proj[i].table, query->proj[i].column);
+	if (query.proj.size())
+		printf("%ld.%ld", query.proj[0].table, query.proj[0].column);
+	for (int i = 1; i < query.proj.size(); i++)
+		printf(" %ld.%ld", query.proj[i].table, query.proj[i].column);
 	putchar('\n');
 }
 
