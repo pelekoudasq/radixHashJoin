@@ -96,6 +96,11 @@ void read_projections(query_info& query){
 
 /* Fills the intermediate table with possibly lots of other intermediates */
 void fill_intermediate(vector<table_ids>& intermediate_set) {
+	0	2	1		3
+	x	x	x		x
+	x	x	x		x
+	x	x	x		x
+	x	x	x		x
 	/*
 	intermediate_set[0] --> 1ος intermediate που φτιάχνουμε και του βάζουμε πράμα μέχρι να
 	μην χρησμοποιηθεί στήλη πίνακα που έχει μέσα, οπότε τότε βάζουμε ένα νέο intermediate
