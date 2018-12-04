@@ -110,11 +110,40 @@ void run_joins(query_info* query, relList *relations) {
 //	{ , , }
 //	     -NULL
 
+/*
+0  2  1
+__ __ __ __
+|| ||
+|| ||
+|| ||
+
+__________________________________________
+struct struct struct
+__________________________________________
+| tableName = 11;
+| vector row_ids;
+|
+|
+
+rowid0 0.0	rowid1 1.0 ---> |><|
+1      10   1			 10 			0-1,1,8						1-6
+2      20   2			 10 			1-1,2						2-5
+3      30   3			 23 			2-4,4						5-13
+4      40   4			 40 			3-6,5
+5      50   5			 60
+6      60   6			 100
+*/
+
 void execute(query_info& query, vector<relList>& relations) {
 	bool **disqualified = run_filters(query, relations);
 	unordered_set<uint64_t>* disqualified2 = run_filters2(query, relations);
-	uint64_t **intermediate = new uint64_t*[query.table.size()]; //all null
-	//run_joins();
+	//uint64_t **intermediate = new uint64_t*[query.table.size()]; //all null
+	vector<table_ids> intermediate;
+	vector<intermediate> intermediate_set;
+	fill_intermediate(intermediate_set);		// Goto querry.cpp for more
+
+	//run_joins(intermediate);
+
 	for (size_t i = 0; i < query.table.size(); i++) {
 		if (disqualified[i] != NULL)
 			delete[] disqualified[i];

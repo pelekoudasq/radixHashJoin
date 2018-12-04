@@ -29,10 +29,16 @@ struct query_info{
 	std::vector<proj_info> proj;
 };
 
+typedef struct {
+	uint64_t tableNo;						// Which table it is
+	std::vector<uint64_t> rowids; // The row ids of the table after filter or join
+} table_ids;
+
 uint64_t read_number(int ch, int *);
 bool read_relations(query_info&);
 void read_predicates(query_info&);
 void read_projections(query_info&);
 void print_query(query_info&);
+void fill_intermediate(std::vector<intermediate>&);
 
 #endif

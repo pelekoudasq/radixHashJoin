@@ -94,6 +94,15 @@ void read_projections(query_info& query){
 	}
 }
 
+/* Fills the intermediate table with possibly lots of other intermediates */
+void fill_intermediate(vector<table_ids>& intermediate_set) {
+	/*
+	intermediate_set[0] --> 1ος intermediate που φτιάχνουμε και του βάζουμε πράμα μέχρι να
+	μην χρησμοποιηθεί στήλη πίνακα που έχει μέσα, οπότε τότε βάζουμε ένα νέο intermediate
+	στο intermediate_set κλπ.
+	*/
+}
+
 /* Prints query struct to check if input is read correctly. Assumes joins are given before filters. */
 void print_query(query_info& query) {
 	//tables
