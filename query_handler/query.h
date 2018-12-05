@@ -39,6 +39,6 @@ bool read_relations(query_info&);
 void read_predicates(query_info&);
 void read_projections(query_info&);
 void print_query(query_info&);
-void fill_intermediate(std::vector<intermediate>&);
+void fill_intermediate(std::vector<table_ids>&);
 
 #endif

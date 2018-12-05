@@ -86,7 +86,8 @@ void parse_table(join_info& join, relList *relations, uint64_t table_number) {
 	}
 }
 
-void run_joins(query_info* query, relList *relations) {
+void run_joins(query_info* query, relList *relations, vector<vector<table_ids>> *intermediate_set) {
+
 	vector<join_info>& join = query->join;
 
 	for (auto&& j : join) {
@@ -135,42 +136,39 @@ rowid0 0.0	rowid1 1.0 ---> |><|		  2 3	0
 */
 
 void execute(query_info& query, vector<relList>& relations) {
-	
-	vector<table_ids*> intermediate_set;
 
+	vector< vector<table_ids*> > intermediate_set;
 	//bool **disqualified = run_filters(query, relations);
 	unordered_set<uint64_t>* disqualified2 = run_filters2(query, relations);
-	//uint64_t **intermediate = new uint64_t*[query.table.size()]; //all null
+
+	// Create an intermediate for every filter result.
 	for (size_t i = 0; i < query.table.size(); i++) {
 		if (disqualified2[i].size() > 0){
-			vector<table_ids> intermediate;
+			vector<table_ids*> intermediate;
 			table_ids* rows = new table_ids;
 			rows->tableNo = i;
-			//std::set<uint64_t>*::iterator it = disqualified2[i].begin();
 			for(size_t j = 0; j < relations[query.table[i]].num_tuples; j++){
-				//while(it != disqualified2[i].end()){
 				if(disqualified2[i].find(j) == disqualified2[i].end()){
 					//add to intermediate
 					rows->rowids.push_back(j);
 				}
-					//it++;
-				//}
 			}
-			intermediate.push_back(rows)
+			intermediate.push_back(rows);
 			intermediate_set.push_back(intermediate);
 		}
 	}
-
-	fill_intermediate(intermediate_set);		// Goto querry.cpp for more
-
-	//run_joins(intermediate);
-
-	for (size_t i = 0; i < query.table.size(); i++) {
-		if (disqualified[i] != NULL)
-			delete[] disqualified[i];
-	}
-	free(disqualified);
 	delete[] disqualified2;
+
+	// Run joins.
+
+	//run_joins(query, relations, &intermediate_set);
+
+	/*for (size_t i = 0; i < query.table.size(); i++) {
+		if (disqualified2[i].size() != 0)
+			delete[] disqualified2[i];
+	}*/
+	//free(disqualified2);
+
 }
 
 int main(int argc, char const *argv[]){
