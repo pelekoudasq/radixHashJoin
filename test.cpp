@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unordered_set>
+#include <unordered_map>
 
 #include <sys/errno.h>
 #include <sys/mman.h>
@@ -23,57 +24,105 @@
 
 using namespace std;
 
-bool **run_filters(query_info& query, vector<relList>& relations) {
+// bool **run_filters(query_info& query, vector<relList>& relations) {
+// 	vector<filter_info>& filter = query.filter;
+// 	bool **disqualified = (bool**)calloc(sizeof(bool*), query.table.size());
+// 	for (auto&& f : filter) {
+// 		uint64_t table_number = query.table[f.table];
+// 		uint64_t column_number = f.column;
+// 		if (disqualified[f.table] == NULL)
+// 			disqualified[f.table] = new bool[relations[table_number].num_tuples](); // sets all to false
+// 		size_t offset = column_number*relations[table_number].num_tuples;
+// 		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
+// 			uint64_t value = relations[table_number].value[offset+j];
+// 			if (disqualified[f.table][j]) {
+// 				if (f.op == '>')
+// 					disqualified[f.table][j] = !(value > f.number);
+// 				else if (f.op == '<')
+// 					disqualified[f.table][j] = !(value < f.number);
+// 				else if (f.op == '=')
+// 					disqualified[f.table][j] = !(value == f.number);
+// 			}
+// 		}
+// 	}
+// 	return disqualified;
+// }
+
+unordered_map< uint64_t, unordered_set<uint64_t> >* run_filters(query_info& query, vector<relList>& relations) {
 	vector<filter_info>& filter = query.filter;
-	bool **disqualified = (bool**)calloc(sizeof(bool*), query.table.size());
-	for (auto&& f : filter) {
-		uint64_t table_number = query.table[f.table];
-		uint64_t column_number = f.column;
-		if (disqualified[f.table] == NULL)
-			disqualified[f.table] = new bool[relations[table_number].num_tuples](); // sets all to false
-		size_t offset = column_number*relations[table_number].num_tuples;
-		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
-			uint64_t value = relations[table_number].value[offset+j];
-			if (disqualified[f.table][j]) {
-				if (f.op == '>')
-					disqualified[f.table][j] = !(value > f.number);
-				else if (f.op == '<')
-					disqualified[f.table][j] = !(value < f.number);
-				else if (f.op == '=')
-					disqualified[f.table][j] = !(value == f.number);
-			}
+	unordered_map< uint64_t, unordered_set<uint64_t> >* filtered = new unordered_map< uint64_t, unordered_set<uint64_t> >();
+	for (uint64_t i = 0; i < query.table.size(); i++) {
+		uint64_t table_number = query.table[i];
+		auto& f = (*filtered)[i];
+		for(uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
+			f.insert(j);
 		}
 	}
-	return disqualified;
-}
-
-unordered_set<uint64_t>* run_filters2(query_info& query, vector<relList>& relations) {
-	vector<filter_info>& filter = query.filter;
-	unordered_set<uint64_t>* disqualified = new unordered_set<uint64_t>[query.table.size()];
 	for (auto&& f : filter) {
 		uint64_t table_number = query.table[f.table];
 		uint64_t column_number = f.column;
 		size_t offset = column_number*relations[table_number].num_tuples;
-		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
+		for(uint64_t j = 0; j < relations[table_number].num_tuples; j++){
 			uint64_t value = relations[table_number].value[offset+j];
 			if (f.op == '>') {
 				if ( !(value > f.number) )
-					disqualified[f.table].insert(j);
+					(*filtered)[f.table].erase(j);
 			}
 			else if (f.op == '<') {
 				if ( !(value < f.number) )
-					disqualified[f.table].insert(j);
+					(*filtered)[f.table].erase(j);
 			}
 			else if (f.op == '=') {
 				if ( !(value == f.number) )
-					disqualified[f.table].insert(j);
+					(*filtered)[f.table].erase(j);
 			}
 		}
 	}
-	return disqualified;
+	return filtered;
 }
 
-void parse_table(join_info& join, relList *relations, uint64_t table_number) {
+// unordered_map< uint64_t, vector<uint64_t> >* run_filters2(query_info& query, vector<relList>& relations) {
+// 	vector<filter_info>& filter = query.filter;
+// 	unordered_set<uint64_t>* disqualified = new unordered_set<uint64_t>[query.table.size()];
+// 	for (auto&& f : filter) {
+// 		uint64_t table_number = query.table[f.table];
+// 		uint64_t column_number = f.column;
+// 		size_t offset = column_number*relations[table_number].num_tuples;
+// 		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
+// 			uint64_t value = relations[table_number].value[offset+j];
+// 			if (f.op == '>') {
+// 				if ( !(value > f.number) )
+// 					disqualified[f.table].insert(j);
+// 			}
+// 			else if (f.op == '<') {
+// 				if ( !(value < f.number) )
+// 					disqualified[f.table].insert(j);
+// 			}
+// 			else if (f.op == '=') {
+// 				if ( !(value == f.number) )
+// 					disqualified[f.table].insert(j);
+// 			}
+// 		}
+// 	}
+// 	unordered_map< uint64_t, vector<uint64_t> >* intermediates = new unordered_map< uint64_t, vector<uint64_t> >;
+// 	// Create an intermediate for every filter result.
+// 	for (size_t i = 0; i < query.table.size(); i++) {
+// 		if (!disqualified2[i].empty()) {
+// 			auto& intermediate = intermediates[i];
+// 			for(size_t j = 0; j < relations[query.table[i]].num_tuples; j++) {
+// 				if(disqualified2[i].find(j) == disqualified2[i].end()) {
+// 					//add to intermediate
+// 					intermediate.push_back(j);
+// 				}
+// 			}
+// 		}
+// 	}
+//
+// 	delete[] disqualified2;
+// 	return intermediates;
+// }
+
+void parse_table(join_info& join, vector<relList>& relations, uint64_t table_number) {
 
 	uint64_t column1_number = join.column1;
 	uint64_t column2_number = join.column2;
@@ -86,18 +135,18 @@ void parse_table(join_info& join, relList *relations, uint64_t table_number) {
 	}
 }
 
-void run_joins(query_info* query, relList *relations, vector<vector<table_ids>> *intermediate_set) {
+void run_joins(query_info& query, vector<relList>& relations, unordered_map<uint64_t, vector<uint64_t>>& intermediates) {
 
-	vector<join_info>& join = query->join;
+	vector<join_info>& join = query.join;
 
 	for (auto&& j : join) {
 		if ( j.table1 == j.table2 ){
-			uint64_t table_number = query->table[j.table1];
+			uint64_t table_number = query.table[j.table1];
 			parse_table(j, relations, table_number);
 		} else {
-			uint64_t table1_number = query->table[j.table1];
+			uint64_t table1_number = query.table[j.table1];
 			uint64_t column1_number = j.column1;
-			uint64_t table2_number = query->table[j.table2];
+			uint64_t table2_number = query.table[j.table2];
 			uint64_t column2_number = j.column2;
 			//get rowids for these tables from intermediate results, if they exist
 			//create relations to send to RadixHashJoin
@@ -107,61 +156,20 @@ void run_joins(query_info* query, relList *relations, vector<vector<table_ids>> 
 	}
 }
 
-// 	3 0 1|0.2=1.0&0.1=2.0&0.2>3499|1.2 0.1
-//	{ , , }
-//	     -NULL
-
-/*
-0  2  1
-__ __ __ __
-|| ||
-|| ||
-|| ||
-
-__________________________________________
-struct struct struct
-__________________________________________
-| tableName = 11;
-| vector row_ids;
-|
-|
-
-rowid0 0.0	rowid1 1.0 ---> |><|		  2 3	0
-1      10   1			 10 			0-1,1	2						1-6
-2      20   2			 10 			1-1,2	8 						2-5
-3      30   3			 23 			2-4,4	9						5-13
-4      40   4			 40 			3-6,5
-5      50   5			 60
-6      60   6			 100
-*/
-
 void execute(query_info& query, vector<relList>& relations) {
 
-	vector< vector<table_ids*> > intermediate_set;
-	//bool **disqualified = run_filters(query, relations);
-	unordered_set<uint64_t>* disqualified2 = run_filters2(query, relations);
+	unordered_map< uint64_t, unordered_set<uint64_t> >* filtered = run_filters(query, relations); // size = query.table.size()
 
-	// Create an intermediate for every filter result.
-	for (size_t i = 0; i < query.table.size(); i++) {
-		if (disqualified2[i].size() > 0){
-			vector<table_ids*> intermediate;
-			table_ids* rows = new table_ids;
-			rows->tableNo = i;
-			for(size_t j = 0; j < relations[query.table[i]].num_tuples; j++){
-				if(disqualified2[i].find(j) == disqualified2[i].end()){
-					//add to intermediate
-					rows->rowids.push_back(j);
-				}
-			}
-			intermediate.push_back(rows);
-			intermediate_set.push_back(intermediate);
-		}
-	}
-	delete[] disqualified2;
-
+	// for (pair<uint64_t, unordered_set<uint64_t>> table : *filtered) {
+	// 	printf("---Table %d---\n", table.first);
+	// 	for (auto&& rowid : table.second) {
+	// 		printf("%d, ", rowid);
+	// 	}
+	// 	printf("\n");
+	// }
+	delete filtered;
 	// Run joins.
-
-	//run_joins(query, relations, &intermediate_set);
+	// run_joins(query, relations, intermediates);
 
 	/*for (size_t i = 0; i < query.table.size(); i++) {
 		if (disqualified2[i].size() != 0)
@@ -217,6 +225,7 @@ int main(int argc, char const *argv[]){
 	for (auto&& queries : batches) {
 		for (auto&& query : queries) {
 			execute(query, relations);
+
 		}
 	}
 	print_batches(batches);

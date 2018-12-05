@@ -7,8 +7,8 @@
 #include "../query_handler/query.h"
 #include "../structs.h"
 
-int32_t next_prime(int32_t x);
-int32_t pow2(int32_t exp);
+int64_t next_prime(int64_t x);
+int64_t pow2(int64_t exp);
 
 void print_disq(query_info& query, std::vector<relList>& relations, bool **disqualified);
 void print_disq2(query_info& query, std::vector<relList>& relations, std::unordered_set<uint64_t>* disqualified);

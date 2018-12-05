@@ -31,7 +31,7 @@ void empty_list(result* list) {
 }
 
 /* Add result to result list. */
-void add_result(result* list, int32_t key1, int32_t key2) {
+void add_result(result* list, int64_t key1, int64_t key2) {
 
     /*if page is full, get more space */
     if (list->size == list->capacity) {
@@ -60,14 +60,14 @@ void print_list(result* list) {
 
     if (temp == NULL) return;
     /* print current bucket */
-    for (int32_t i=0; i<list->size; i++) {
+    for (int64_t i=0; i<list->size; i++) {
         printf("Pairs of IDs are: %d, %d\n", page[i].keyR, page[i].keyS);
     }
     temp = temp->next;
     /* print all other buckets */
     while (temp != NULL) {
         page = (key_tuple*)&temp[1];
-        for (int32_t i=0; i<list->capacity; i++) {
+        for (int64_t i=0; i<list->capacity; i++) {
             printf("Pairs of IDs are: %d, %d\n", page[i].keyR, page[i].keyS);
         }
         temp = temp->next;

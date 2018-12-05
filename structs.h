@@ -8,18 +8,18 @@ struct relList{
 };
 
 struct tuple{
-	int32_t key;
-	int32_t payload;
+	int64_t key;
+	int64_t payload;
 };
 
 struct relation{
 	tuple *tuples;
-	uint32_t num_tuples;
+	uint64_t num_tuples;
 };
 
 struct relation_info{
 	relation tups;
-	int32_t *histogram;
+	int64_t *histogram;
 };
 
 #endif
