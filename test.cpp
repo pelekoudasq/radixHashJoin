@@ -135,7 +135,7 @@ void parse_table(join_info& join, vector<relList>& relations, uint64_t table_num
 	}
 }
 
-void run_joins(query_info& query, vector<relList>& relations, unordered_map<uint64_t, vector<uint64_t>>& intermediates) {
+void run_joins(query_info& query, vector<relList>& relations, unordered_map< uint64_t, unordered_set<uint64_t> >* filtered) {
 
 	vector<join_info>& join = query.join;
 
@@ -144,10 +144,10 @@ void run_joins(query_info& query, vector<relList>& relations, unordered_map<uint
 			uint64_t table_number = query.table[j.table1];
 			parse_table(j, relations, table_number);
 		} else {
-			uint64_t table1_number = query.table[j.table1];
-			uint64_t column1_number = j.column1;
-			uint64_t table2_number = query.table[j.table2];
-			uint64_t column2_number = j.column2;
+			// uint64_t table1_number = query.table[j.table1];
+			// uint64_t column1_number = j.column1;
+			// uint64_t table2_number = query.table[j.table2];
+			// uint64_t column2_number = j.column2;
 			//get rowids for these tables from intermediate results, if they exist
 			//create relations to send to RadixHashJoin
 			//send relations to RadxHashJoin
@@ -169,13 +169,7 @@ void execute(query_info& query, vector<relList>& relations) {
 	// }
 	delete filtered;
 	// Run joins.
-	// run_joins(query, relations, intermediates);
-
-	/*for (size_t i = 0; i < query.table.size(); i++) {
-		if (disqualified2[i].size() != 0)
-			delete[] disqualified2[i];
-	}*/
-	//free(disqualified2);
+	run_joins(query, relations, filtered);
 
 }
 
@@ -191,8 +185,12 @@ int main(int argc, char const *argv[]){
 		//open file and get contents
 		relList relation;
 		int fileDesc = open(lineptr, O_RDONLY);
-		read(fileDesc, &relation.num_tuples, sizeof(uint64_t));
-		read(fileDesc, &relation.num_columns, sizeof(uint64_t));
+		if (read(fileDesc, &relation.num_tuples, sizeof(uint64_t)) < 0){
+			return -1;
+		}
+		if (read(fileDesc, &relation.num_columns, sizeof(uint64_t)) < 0){
+			return -1;
+		}
 		relation.value = (uint64_t*)mmap(NULL, relation.num_tuples*relation.num_columns*sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fileDesc, 0);
 		relation.value += 2;			//file offset
 		close(fileDesc);

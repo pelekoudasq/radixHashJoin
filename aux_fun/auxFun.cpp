@@ -36,7 +36,7 @@ relation *tableRelation(int64_t *table, int64_t columnNumber, uint64_t numOfRows
     relation *R = (relation*)malloc(sizeof(relation));
     R->num_tuples = numOfRows;
     R->tuples = (tuple*)malloc(numOfRows*sizeof(tuple));
-    for (int64_t i = 0; i < numOfRows; i++){
+    for (size_t i = 0; i < numOfRows; i++){
         R->tuples[i].key = i + 1;
         R->tuples[i].payload = table[i*numOfColumns+columnNumber-1];
     }

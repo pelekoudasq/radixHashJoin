@@ -61,14 +61,14 @@ void print_list(result* list) {
     if (temp == NULL) return;
     /* print current bucket */
     for (int64_t i=0; i<list->size; i++) {
-        printf("Pairs of IDs are: %d, %d\n", page[i].keyR, page[i].keyS);
+        printf("Pairs of IDs are: %ld, %ld\n", page[i].keyR, page[i].keyS);
     }
     temp = temp->next;
     /* print all other buckets */
     while (temp != NULL) {
         page = (key_tuple*)&temp[1];
         for (int64_t i=0; i<list->capacity; i++) {
-            printf("Pairs of IDs are: %d, %d\n", page[i].keyR, page[i].keyS);
+            printf("Pairs of IDs are: %ld, %ld\n", page[i].keyR, page[i].keyS);
         }
         temp = temp->next;
     }

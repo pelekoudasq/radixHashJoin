@@ -115,26 +115,26 @@ void print_query(query_info& query) {
 	//tables
 	if (query.table.size())
 		printf("%ld", query.table[0]);
-	for (int i = 1; i < query.table.size(); i++)
+	for (size_t i = 1; i < query.table.size(); i++)
 		printf(" %ld", query.table[i]);
 	putchar('|');
 	//joins
 	if (query.join.size())
 		printf("%ld.%ld=%ld.%ld", query.join[0].table1, query.join[0].column1, query.join[0].table2, query.join[0].column2);
-	for (int i = 1; i < query.join.size(); i++)
+	for (size_t i = 1; i < query.join.size(); i++)
 		printf("&%ld.%ld=%ld.%ld", query.join[i].table1, query.join[i].column1, query.join[i].table2, query.join[i].column2);
 	//filters
 	if (query.filter.size()) {
 		if (query.join.size()) putchar('&');
 		printf("%ld.%ld%c%ld", query.filter[0].table, query.filter[0].column, query.filter[0].op, query.filter[0].number);
 	}
-	for (int i = 1; i < query.filter.size(); i++)
+	for (size_t i = 1; i < query.filter.size(); i++)
 		printf(" %ld.%ld%c%ld", query.filter[i].table, query.filter[i].column, query.filter[i].op, query.filter[i].number);
 	putchar('|');
 	//projections
 	if (query.proj.size())
 		printf("%ld.%ld", query.proj[0].table, query.proj[0].column);
-	for (int i = 1; i < query.proj.size(); i++)
+	for (size_t i = 1; i < query.proj.size(); i++)
 		printf(" %ld.%ld", query.proj[i].table, query.proj[i].column);
 	putchar('\n');
 }

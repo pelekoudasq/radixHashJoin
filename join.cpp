@@ -26,19 +26,19 @@ int64_t twoInLSB;	// 2^HASH_LSB
 void hash_relation(relation_info* newRel, relation *rel){
 
 	newRel->histogram = (int64_t*)calloc(twoInLSB, sizeof(int64_t));
-	for (int64_t i = 0; i < rel->num_tuples; i++){
+	for (size_t i = 0; i < rel->num_tuples; i++){
 		int64_t position = rel->tuples[i].payload & (twoInLSB-1);
 		newRel->histogram[position]++;
 	}
 
 	int64_t *sumHistogram = (int64_t*)malloc(twoInLSB * sizeof(int64_t));
 	sumHistogram[0] = 0;
-	for (int i = 1; i < twoInLSB; i++)
+	for (int64_t i = 1; i < twoInLSB; i++)
 		sumHistogram[i] = sumHistogram[i-1] + newRel->histogram[i-1];
 
 	newRel->tups.num_tuples = rel->num_tuples;
 	newRel->tups.tuples = (tuple*)malloc((rel->num_tuples)*sizeof(tuple));
-	for (int64_t i = 0; i < rel->num_tuples; i++){
+	for (size_t i = 0; i < rel->num_tuples; i++){
 		int64_t position = rel->tuples[i].payload & (twoInLSB-1);
 		memcpy(newRel->tups.tuples+sumHistogram[position], &rel->tuples[i], sizeof(tuple));
 		sumHistogram[position]++;
