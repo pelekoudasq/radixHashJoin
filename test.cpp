@@ -122,15 +122,37 @@ unordered_map< uint64_t, unordered_set<uint64_t> >* run_filters(query_info& quer
 // 	return intermediates;
 // }
 
-void parse_table(join_info& join, vector<relList>& relations, uint64_t table_number) {
+void parse_table(join_info& join, vector<relList>& relations, uint64_t table_number, 
+	unordered_map< uint64_t, unordered_set<uint64_t> >* filtered, vector< vector<uint64_t> >* intermediate, size_t tableSize) {
 
 	uint64_t column1_number = join.column1;
 	uint64_t column2_number = join.column2;
-	for(size_t i = 0; i < relations[table_number].num_tuples; i++){
-		uint64_t value1 = relations[table_number].value[column1_number*relations[table_number].num_tuples+i];
-		uint64_t value2 = relations[table_number].value[column2_number*relations[table_number].num_tuples+i];
-		if (value1 == value2){
-			//add i (rowid) to intermediate results for table
+	size_t offset = relations[table_number].num_tuples;
+
+	if ( intermediate[table_number].empty() ) {
+		unordered_map< uint64_t, unordered_set<uint64_t> >::const_iterator table = filtered->find(table_number);
+		for (auto&& rowid : table->second){
+			uint64_t value1 = relations[table_number].value[column1_number*offset+rowid];
+			uint64_t value2 = relations[table_number].value[column2_number*offset+rowid];
+			if (value1 == value2){
+				(*intermediate)[table_number].push_back(rowid);
+			}
+		}
+	} else {
+		vector<uint64_t> oldTable ((*intermediate)[table_number]);
+		vector<uint64_t>::iterator i = oldTable.end();
+		//size_t position = oldTable.size();
+		while ( i != oldTable.begin() ){
+			uint64_t value1 = relations[table_number].value[column1_number*offset+(*i)];
+			uint64_t value2 = relations[table_number].value[column2_number*offset+(*i)];
+			if (value1 == value2){
+				for (size_t k = 0; k < tableSize; k++)	{
+					if ( !intermediate[k].empty() ){
+						(*intermediate)[k].erase(i);
+					}
+				}
+			}
+			i--;
 		}
 	}
 }
@@ -138,11 +160,12 @@ void parse_table(join_info& join, vector<relList>& relations, uint64_t table_num
 void run_joins(query_info& query, vector<relList>& relations, unordered_map< uint64_t, unordered_set<uint64_t> >* filtered) {
 
 	vector<join_info>& join = query.join;
+	vector< vector<uint64_t> >* intermediate = new vector< vector<uint64_t> >(query.table.size());
 
 	for (auto&& j : join) {
 		if ( j.table1 == j.table2 ){
 			uint64_t table_number = query.table[j.table1];
-			parse_table(j, relations, table_number);
+			parse_table(j, relations, table_number, filtered, intermediate, query.table.size());
 		} else {
 			// uint64_t table1_number = query.table[j.table1];
 			// uint64_t column1_number = j.column1;
@@ -160,8 +183,9 @@ void execute(query_info& query, vector<relList>& relations) {
 
 	unordered_map< uint64_t, unordered_set<uint64_t> >* filtered = run_filters(query, relations); // size = query.table.size()
 
+	run_joins(query, relations, filtered);
 	// for (pair<uint64_t, unordered_set<uint64_t>> table : *filtered) {
-	// 	printf("---Table %d---\n", table.first);
+	// 	printf("---Table %d---\n", table. );
 	// 	for (auto&& rowid : table.second) {
 	// 		printf("%d, ", rowid);
 	// 	}
@@ -169,7 +193,6 @@ void execute(query_info& query, vector<relList>& relations) {
 	// }
 	delete filtered;
 	// Run joins.
-	run_joins(query, relations, filtered);
 
 }
 
