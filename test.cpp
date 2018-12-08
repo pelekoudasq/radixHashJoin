@@ -127,6 +127,26 @@ relation *create_relation(uint64_t join_table, vector<relList>& relations, uint6
 }
 
 void update_intermediate(vector< vector<uint64_t> >& intermediate, result *results, join_info& join){
+
+	bucket_info* temp = results->head;
+	key_tuple* page = (key_tuple*)&temp[1];
+
+	if (temp == NULL) return;
+	
+	for (int64_t i=0; i < results->size; i++) {
+		intermediate[join.table1].push_back(page[i].keyR);
+		intermediate[join.table2].push_back(page[i].keyS);
+	}
+	
+	temp = temp->next;
+	while (temp != NULL) {
+		page = (key_tuple*)&temp[1];
+		for (int64_t i=0; i < results->capacity; i++) {
+			intermediate[join.table1].push_back(page[i].keyR);
+			intermediate[join.table2].push_back(page[i].keyS);
+		}
+		temp = temp->next;
+	}
 	return;
 }
 
@@ -152,6 +172,13 @@ void run_joins(query_info& query, vector<relList>& relations, unordered_map< uin
 			result* results = RadixHashJoin(relR, relS);
 			//get results to intermediate
 			update_intermediate(intermediate, results, join);
+			//free process' structures
+			free(relR->tuples);
+			free(relS->tuples);
+			free(relR);
+			free(relS);
+			empty_list(results);
+			free(results);
 		}
 		for (size_t i = 0; i < query.table.size(); ++i) {
 			if (filtered[i].empty())
@@ -167,6 +194,7 @@ void run_joins(query_info& query, vector<relList>& relations, unordered_map< uin
 				printf("%ld ", intermediate[i].size());
 		}
 		printf("\n");
+		// break;
 	}
 }
 
@@ -174,6 +202,7 @@ void execute(query_info& query, vector<relList>& relations) {
 
 	unordered_map< uint64_t, unordered_set<uint64_t> >* filtered = run_filters(query, relations); // size = query.table.size()
 
+	// Run joins.
 	run_joins(query, relations, *filtered);
 	// for (pair<uint64_t, unordered_set<uint64_t>> table : *filtered) {
 	// 	printf("---Table %d---\n", table. );
@@ -183,7 +212,6 @@ void execute(query_info& query, vector<relList>& relations) {
 	// 	printf("\n");
 	// }
 	delete filtered;
-	// Run joins.
 
 }
 
