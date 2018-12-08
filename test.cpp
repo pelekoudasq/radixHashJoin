@@ -27,30 +27,6 @@ using std::unordered_map;
 using std::unordered_set;
 using std::pair;
 
-// bool **run_filters(query_info& query, vector<relList>& relations) {
-// 	vector<filter_info>& filter = query.filter;
-// 	bool **disqualified = (bool**)calloc(sizeof(bool*), query.table.size());
-// 	for (auto&& f : filter) {
-// 		uint64_t table_number = query.table[f.table];
-// 		uint64_t column_number = f.column;
-// 		if (disqualified[f.table] == NULL)
-// 			disqualified[f.table] = new bool[relations[table_number].num_tuples](); // sets all to false
-// 		size_t offset = column_number*relations[table_number].num_tuples;
-// 		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
-// 			uint64_t value = relations[table_number].value[offset+j];
-// 			if (disqualified[f.table][j]) {
-// 				if (f.op == '>')
-// 					disqualified[f.table][j] = !(value > f.number);
-// 				else if (f.op == '<')
-// 					disqualified[f.table][j] = !(value < f.number);
-// 				else if (f.op == '=')
-// 					disqualified[f.table][j] = !(value == f.number);
-// 			}
-// 		}
-// 	}
-// 	return disqualified;
-// }
-
 unordered_map< uint64_t, unordered_set<uint64_t> >* run_filters(query_info& query, vector<relList>& relations) {
 	vector<filter_info>& filter = query.filter;
 	unordered_map< uint64_t, unordered_set<uint64_t> >* filtered = new unordered_map< uint64_t, unordered_set<uint64_t> >();
@@ -83,47 +59,6 @@ unordered_map< uint64_t, unordered_set<uint64_t> >* run_filters(query_info& quer
 	}
 	return filtered;
 }
-
-// unordered_map< uint64_t, vector<uint64_t> >* run_filters2(query_info& query, vector<relList>& relations) {
-// 	vector<filter_info>& filter = query.filter;
-// 	unordered_set<uint64_t>* disqualified = new unordered_set<uint64_t>[query.table.size()];
-// 	for (auto&& f : filter) {
-// 		uint64_t table_number = query.table[f.table];
-// 		uint64_t column_number = f.column;
-// 		size_t offset = column_number*relations[table_number].num_tuples;
-// 		for(size_t j = 0; j < relations[table_number].num_tuples; j++){
-// 			uint64_t value = relations[table_number].value[offset+j];
-// 			if (f.op == '>') {
-// 				if ( !(value > f.number) )
-// 					disqualified[f.table].insert(j);
-// 			}
-// 			else if (f.op == '<') {
-// 				if ( !(value < f.number) )
-// 					disqualified[f.table].insert(j);
-// 			}
-// 			else if (f.op == '=') {
-// 				if ( !(value == f.number) )
-// 					disqualified[f.table].insert(j);
-// 			}
-// 		}
-// 	}
-// 	unordered_map< uint64_t, vector<uint64_t> >* intermediates = new unordered_map< uint64_t, vector<uint64_t> >;
-// 	// Create an intermediate for every filter result.
-// 	for (size_t i = 0; i < query.table.size(); i++) {
-// 		if (!disqualified2[i].empty()) {
-// 			auto& intermediate = intermediates[i];
-// 			for(size_t j = 0; j < relations[query.table[i]].num_tuples; j++) {
-// 				if(disqualified2[i].find(j) == disqualified2[i].end()) {
-// 					//add to intermediate
-// 					intermediate.push_back(j);
-// 				}
-// 			}
-// 		}
-// 	}
-//
-// 	delete[] disqualified2;
-// 	return intermediates;
-// }
 
 void parse_table(join_info& join, vector<relList>& relations, uint64_t table_number, 
 	unordered_map< uint64_t, unordered_set<uint64_t> >* filtered, vector< vector<uint64_t> >* intermediate, size_t tableSize) {
@@ -187,12 +122,6 @@ relation *create_relation(uint64_t join_table, vector<relList>& relations, uint6
 		}
 	}
 
-	// R->num_tuples = numOfRows;
-	// R->tuples = (tuple*)malloc(numOfRows*sizeof(tuple));
-	// for (size_t i = 0; i < numOfRows; i++){
-	// 	R->tuples[i].key = i + 1;
-	// 	R->tuples[i].payload = table[i*numOfColumns+columnNumber-1];
-	// }
 	return R;
 }
 
