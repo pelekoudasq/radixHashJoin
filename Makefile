@@ -1,6 +1,6 @@
 CC		= g++
-CFLAGS	= -std=c++11 -O3 -Wall
-CXXFLAGS	= -std=c++11 -O3 -Wall
+CFLAGS	= -std=c++11 -O3 -Wall -g
+CXXFLAGS	= -std=c++11 -O3 -Wall -g
 JOIN	= join
 DEB		= joindeb
 OBJS	= test.o aux_fun/auxFun.o result_list/resultList.o join.o file_list/fileList.o query_handler/query.o

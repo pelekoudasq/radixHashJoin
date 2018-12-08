@@ -22,7 +22,10 @@
 #include "file_list/fileList.h"
 #include "query_handler/query.h"
 
-using namespace std;
+using std::vector;
+using std::unordered_map;
+using std::unordered_set;
+using std::pair;
 
 // bool **run_filters(query_info& query, vector<relList>& relations) {
 // 	vector<filter_info>& filter = query.filter;
@@ -129,25 +132,26 @@ void parse_table(join_info& join, vector<relList>& relations, uint64_t table_num
 	uint64_t column2_number = join.column2;
 	size_t offset = relations[table_number].num_tuples;
 
-	if ( intermediate[table_number].empty() ) {
-		unordered_map< uint64_t, unordered_set<uint64_t> >::const_iterator table = filtered->find(table_number);
+	if ( (*intermediate)[join.table1].empty() ) {
+		unordered_map< uint64_t, unordered_set<uint64_t> >::const_iterator table = filtered->find(join.table1);
 		for (auto&& rowid : table->second){
 			uint64_t value1 = relations[table_number].value[column1_number*offset+rowid];
 			uint64_t value2 = relations[table_number].value[column2_number*offset+rowid];
 			if (value1 == value2){
-				(*intermediate)[table_number].push_back(rowid);
+				(*intermediate)[join.table1].push_back(rowid);
 			}
 		}
 	} else {
-		vector<uint64_t> oldTable ((*intermediate)[table_number]);
+		vector<uint64_t> oldTable ((*intermediate)[join.table1]);
 		vector<uint64_t>::iterator i = oldTable.end();
 		//size_t position = oldTable.size();
 		while ( i != oldTable.begin() ){
 			uint64_t value1 = relations[table_number].value[column1_number*offset+(*i)];
 			uint64_t value2 = relations[table_number].value[column2_number*offset+(*i)];
 			if (value1 == value2){
+				//erase joined values from all tables
 				for (size_t k = 0; k < tableSize; k++)	{
-					if ( !intermediate[k].empty() ){
+					if ( !(*intermediate)[k].empty() ){
 						(*intermediate)[k].erase(i);
 					}
 				}
@@ -157,23 +161,61 @@ void parse_table(join_info& join, vector<relList>& relations, uint64_t table_num
 	}
 }
 
+relation *create_relation(uint64_t join_table, vector<relList>& relations, uint64_t table_number, uint64_t column_number,
+	unordered_map< uint64_t, unordered_set<uint64_t> >* filtered, vector< vector<uint64_t> >* intermediate) {
+
+	relation *R = (relation*)malloc(sizeof(relation));
+	size_t offset = column_number*relations[table_number].num_tuples;
+
+	if ( (*intermediate)[join_table].empty() ){
+		unordered_map< uint64_t, unordered_set<uint64_t> >::const_iterator table = filtered->find(join_table);
+		R->num_tuples = table->second.size();
+		R->tuples = (tuple*)malloc(R->num_tuples*sizeof(tuple));
+		size_t i = 0;
+		for (auto&& rowid : table->second){
+			R->tuples[i].key = rowid;
+			R->tuples[i].payload = relations[table_number].value[offset+rowid];
+			i++;
+		}
+	} else {
+		R->num_tuples = (*intermediate)[join_table].size();
+		R->tuples = (tuple*)malloc((R->num_tuples)*sizeof(tuple));
+		for (size_t i = 0; i < R->num_tuples; i++) {
+			size_t rowid = (*intermediate)[join_table].at(i);
+			R->tuples[i].key = rowid;
+			R->tuples[i].payload = relations[table_number].value[offset+rowid];
+		}
+	}
+
+	// R->num_tuples = numOfRows;
+	// R->tuples = (tuple*)malloc(numOfRows*sizeof(tuple));
+	// for (size_t i = 0; i < numOfRows; i++){
+	// 	R->tuples[i].key = i + 1;
+	// 	R->tuples[i].payload = table[i*numOfColumns+columnNumber-1];
+	// }
+	return R;
+}
+
 void run_joins(query_info& query, vector<relList>& relations, unordered_map< uint64_t, unordered_set<uint64_t> >* filtered) {
 
-	vector<join_info>& join = query.join;
+	vector<join_info>& joins = query.join;
 	vector< vector<uint64_t> >* intermediate = new vector< vector<uint64_t> >(query.table.size());
-
-	for (auto&& j : join) {
-		if ( j.table1 == j.table2 ){
-			uint64_t table_number = query.table[j.table1];
-			parse_table(j, relations, table_number, filtered, intermediate, query.table.size());
+	printf("join\n");
+	for (auto&& join : joins) {
+		if ( join.table1 == join.table2 ){
+			uint64_t table_number = query.table[join.table1];
+			parse_table(join, relations, table_number, filtered, intermediate, query.table.size());
 		} else {
-			// uint64_t table1_number = query.table[j.table1];
-			// uint64_t column1_number = j.column1;
-			// uint64_t table2_number = query.table[j.table2];
-			// uint64_t column2_number = j.column2;
-			//get rowids for these tables from intermediate results, if they exist
+			uint64_t table1_number = query.table[join.table1];
+			uint64_t column1_number = join.column1;
+			uint64_t table2_number = query.table[join.table2];
+			uint64_t column2_number = join.column2;
+			//get rowids for these tables from intermediate or filtered
 			//create relations to send to RadixHashJoin
+			relation *relR = create_relation(join.table1, relations, table1_number, column1_number, filtered, intermediate);
+			relation *relS = create_relation(join.table2, relations, table2_number, column2_number, filtered, intermediate);
 			//send relations to RadxHashJoin
+			RadixHashJoin(relR, relS);
 			//get results to intermediate
 		}
 	}
