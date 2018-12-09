@@ -84,7 +84,7 @@ void parse_table(join_info& join, vector<relList>& relations, uint64_t table_num
 		while ( i != oldTable.begin() ){
 			uint64_t value1 = relations[table_number].value[column1_number*offset+(*i)];
 			uint64_t value2 = relations[table_number].value[column2_number*offset+(*i)];
-			if (value1 == value2){
+			if (value1 != value2){
 				//erase joined values from all tables
 				for (size_t k = 0; k < tableSize; k++)	{
 					if ( !intermediate[k].empty() ){
