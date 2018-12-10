@@ -7,6 +7,7 @@
 #include <cstring>
 #include <unordered_set>
 #include <unordered_map>
+#include <set>
 
 #include <sys/errno.h>
 #include <sys/mman.h>
@@ -23,6 +24,7 @@
 #include "query_handler/query.h"
 
 using std::vector;
+using std::set;
 using std::unordered_map;
 using std::unordered_set;
 using std::pair;
@@ -114,12 +116,16 @@ relation *create_relation(uint64_t join_table, vector<relList>& relations, uint6
 			i++;
 		}
 	} else {
-		R->num_tuples = intermediate[join_table].size();
+		set<uint64_t> uniqueValues;
+		for (auto&& val : intermediate[join_table])
+			uniqueValues.insert(val);
+		R->num_tuples = uniqueValues.size();
 		R->tuples = (tuple*)malloc((R->num_tuples)*sizeof(tuple));
-		for (size_t i = 0; i < R->num_tuples; i++) {
-			size_t rowid = intermediate[join_table].at(i);
-			R->tuples[i].key = rowid;
-			R->tuples[i].payload = relations[table_number].value[offset+rowid];
+		size_t i = 0;
+		for (auto&& val : uniqueValues) {
+			R->tuples[i].key = val;
+			R->tuples[i].payload = relations[table_number].value[offset+val];
+			i++;
 		}
 	}
 
