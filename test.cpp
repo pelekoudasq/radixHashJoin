@@ -20,7 +20,6 @@
 #include "aux_fun/auxFun.h"
 #include "join.h"
 #include "result_list/resultList.h"
-#include "file_list/fileList.h"
 #include "query_handler/query.h"
 
 using std::vector;
@@ -273,7 +272,7 @@ void execute(query_info& query, vector<relList>& relations) {
 
 }
 
-int main(int argc, char const *argv[]){
+int main(void){
 	char *lineptr = NULL;
 	size_t n = 0;
 	ssize_t lineSize;

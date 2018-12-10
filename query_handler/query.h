@@ -13,7 +13,7 @@ struct join_info{
 struct filter_info{
 	uint64_t table;
 	uint64_t column;
-	char op;
+	int op;
 	uint64_t number;
 };
 
@@ -39,6 +39,5 @@ bool read_relations(query_info&);
 void read_predicates(query_info&);
 void read_projections(query_info&);
 void print_query(query_info&);
-void fill_intermediate(std::vector<table_ids>&);
 
 #endif

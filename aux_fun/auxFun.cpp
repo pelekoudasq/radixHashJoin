@@ -59,38 +59,6 @@ relation *randomRel(int x) {
 
 using namespace std;
 
-// void print_disq(query_info& query, vector<relList>& relations, bool **disqualified) {
-// 	for (auto&& table_number : query.table) {
-// 		for (int j = 0; j < relations[table_number].num_tuples; ++j) {
-// 			if (disqualified[i] == NULL)
-// 				printf("0 ");
-// 			else
-// 				printf("%d ", disqualified[i][j]);
-// 		}
-// 		printf("\n");
-// 	}
-// }
-//
-// void print_disq2(query_info& query, vector<relList>& relations, unordered_set<uint64_t>* disqualified) {
-// 	for (auto&& table_number : query.table) {
-// 		for (int j = 0; j < relations[table_number].num_tuples; ++j) {
-// 			printf("%d ", disqualified[i].find(j));
-// 		}
-// 		printf("\n");
-// 	}
-// }
-
-void print_relations(vector<relList>& relations) {
-	for (auto&& relation : relations){
-		//printf("%ld, %ld\n", relation.num_tuples, relation.num_columns);
-		for (size_t j = 0; j < relation.num_tuples; ++j){
-			for (size_t k = 0; k < relation.num_columns; ++k)
-				printf("%ld|", relation.value[k*relation.num_tuples+j]);
-			printf("\n");
-		}
-	}
-}
-
 void print_batches(vector<vector<query_info>>& batches) {
 	for (auto&& queries : batches) {
 		for (auto&& query : queries) {

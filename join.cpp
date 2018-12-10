@@ -53,26 +53,26 @@ void hash_relation(relation_info* newRel, relation *rel){
  * always put key of array R first and then key of array S
  */
 
-void join_buckets(result* list, relation_info* small, relation_info* big, int begSmall, int begBig, int bucketNo, int orderFlag) {
-	int hashValue = next_prime(small->histogram[bucketNo]);
+void join_buckets(result* list, relation_info* small, relation_info* big, int64_t begSmall, int64_t begBig, int bucketNo, int orderFlag) {
+	int64_t hashValue = next_prime(small->histogram[bucketNo]);
 
 	int64_t* bucket = (int64_t*)malloc(hashValue * sizeof(int64_t));
-	for (int i = 0; i < hashValue; i++)
+	for (int64_t i = 0; i < hashValue; i++)
 		bucket[i] = -1;
 
 	int64_t* chain = (int64_t*)malloc(small->histogram[bucketNo] * sizeof(int64_t));
-	int endSmall = begSmall + small->histogram[bucketNo];
+	int64_t endSmall = begSmall + small->histogram[bucketNo];
 
 	for (int64_t i = begSmall; i < endSmall; i++){
 		int64_t position = (small->tups.tuples[i].payload) % hashValue;
-		int previousValue = bucket[position];
+		int64_t previousValue = bucket[position];
 		bucket[position] = i-begSmall;
 		chain[i-begSmall] = previousValue;
 	}
-	int endBig = begBig + big->histogram[bucketNo];
+	int64_t endBig = begBig + big->histogram[bucketNo];
 
 	for (int64_t i = begBig; i < endBig; i++) {
-		int bigHash = (big->tups.tuples[i].payload) % hashValue;
+		int64_t bigHash = (big->tups.tuples[i].payload) % hashValue;
 		int64_t position = bucket[bigHash];
 		while (position != -1) {
 			if (big->tups.tuples[i].payload == small->tups.tuples[position+begSmall].payload) {
@@ -104,7 +104,7 @@ result* RadixHashJoin(relation *relR, relation *relS) {
 	result* list = (result*)malloc(sizeof(result));
 	init_list(list);
 
-	int begR = 0, begS = 0;
+	int64_t begR = 0, begS = 0;
 	for (int i = 0; i < twoInLSB; i++){
 		if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
 			if (relRhashed.histogram[i] >= relShashed.histogram[i])

@@ -1,17 +1,15 @@
-CC		= g++
-CFLAGS	= -std=c++11 -O3 -Wall -g
-CXXFLAGS	= -std=c++11 -O3 -Wall -g
-JOIN	= join
-DEB		= joindeb
-OBJS	= test.o aux_fun/auxFun.o result_list/resultList.o join.o file_list/fileList.o query_handler/query.o
+CC			= g++
+CXXFLAGS	= -std=c++11 -g3 -Wall -Wextra -Wconversion
+JOIN		= join
+OBJS		= test.o aux_fun/auxFun.o result_list/resultList.o join.o query_handler/query.o
 
-.PHONY : all clean
-all: $(JOIN) $(DEB)
+.PHONY: all clean
+all: $(JOIN)
 
 $(JOIN): $(OBJS)
-$(DEB): $(OBJS)
-	g++ -std=c++11 -g test.cpp aux_fun/auxFun.cpp result_list/resultList.cpp join.cpp file_list/fileList.cpp query_handler/query.cpp -D_debug_ -o $(DEB)
+
 clean:
-	rm -f $(OBJS) $(JOIN) $(DEB)
+	rm -f $(OBJS) $(JOIN)
+
 run: all
-	time --format="Time Elapsed: %E" ./joindeb > /dev/null
+	cat small/small.init small/small.work | (time --format="Time Elapsed: %E" ./join)
