@@ -132,35 +132,87 @@ relation *create_relation(uint64_t join_table, vector<relList>& relations, uint6
 	return R;
 }
 
-void update_intermediate(vector< vector<uint64_t> >& intermediate, result *results, join_info& join){
+void change_intermediate(vector< vector<uint64_t> >& intermediate, vector< vector<uint64_t> >& intermediate_upd, uint64_t rowid1, uint64_t rowid2, 
+	size_t table_existing, size_t table_n_existing){
+
+}
+
+vector< vector<uint64_t> > update_intermediate(vector< vector<uint64_t> >& intermediate, result *results, join_info& join, size_t tableSize){
 
 	bucket_info* temp = results->head;
 	key_tuple* page = (key_tuple*)&temp[1];
 
-	if (temp == NULL) return;
+	vector< vector<uint64_t> > intermediate_upd(tableSize);
+
+	//if we have no results in this join, then empty the intermediate, no results
+	if (temp == NULL)
+		return intermediate_upd;
 	
-	for (int64_t i=0; i < results->size; i++) {
-		intermediate[join.table1].push_back(page[i].keyR);
-		intermediate[join.table2].push_back(page[i].keyS);
-	}
-	
-	temp = temp->next;
-	while (temp != NULL) {
-		page = (key_tuple*)&temp[1];
-		for (int64_t i=0; i < results->capacity; i++) {
+	if (intermediate[join.table1].empty() && intermediate[join.table2].empty()){
+		
+		//if intermediate results for both tables are empty
+		//push back all resutls to their intermediate vectors 
+		for (int64_t i=0; i < results->size; i++) {
 			intermediate[join.table1].push_back(page[i].keyR);
 			intermediate[join.table2].push_back(page[i].keyS);
 		}
+		
 		temp = temp->next;
+		while (temp != NULL) {
+			page = (key_tuple*)&temp[1];
+			for (int64_t i=0; i < results->capacity; i++) {
+				intermediate[join.table1].push_back(page[i].keyR);
+				intermediate[join.table2].push_back(page[i].keyS);
+			}
+			temp = temp->next;
+		}
+
+		return intermediate;
+
+	} else if (!intermediate[join.table1].empty() && !intermediate[join.table2].empty()){
+		
+		//if both are not empty, then we have to parse them both to find the matching pairs
+		//in the intermediate and the results from the join
+		
+		return intermediate_upd;
+
+	} else {
+		
+		//else one of them is empty, so as we parse the results, we search the instermediate of the
+		//table that already exists and we create the new intermediate
+
+		for (int64_t i=0; i < results->size; i++) {
+			if (intermediate[join.table2].empty())
+				change_intermediate(intermediate, intermediate_upd, page[i].keyR, page[i].keyS, join.table1, join.table2);
+			else
+				change_intermediate(intermediate, intermediate_upd, page[i].keyS, page[i].keyR, join.table2, join.table1);
+			// intermediate[join.table1].push_back(page[i].keyR);
+			// intermediate[join.table2].push_back(page[i].keyS);
+		}
+		
+		temp = temp->next;
+		while (temp != NULL) {
+			page = (key_tuple*)&temp[1];
+			for (int64_t i=0; i < results->capacity; i++) {
+				if (intermediate[join.table2].empty())
+					change_intermediate(intermediate, intermediate_upd, page[i].keyR, page[i].keyS, join.table1, join.table2);
+				else
+					change_intermediate(intermediate, intermediate_upd, page[i].keyS, page[i].keyR, join.table2, join.table1);
+				// intermediate[join.table1].push_back(page[i].keyR);
+				// intermediate[join.table2].push_back(page[i].keyS);
+			}
+			temp = temp->next;
+		}
+		return intermediate_upd;
 	}
-	return;
+	
 }
 
 void run_joins(query_info& query, vector<relList>& relations, unordered_map< uint64_t, unordered_set<uint64_t> >& filtered) {
 
 	vector<join_info>& joins = query.join;
 	vector< vector<uint64_t> > intermediate(query.table.size());
-	printf("join\n");
+	printf("run_join\n");
 	for (auto&& join : joins) {
 		if ( join.table1 == join.table2 ){
 			uint64_t table_number = query.table[join.table1];
@@ -177,7 +229,7 @@ void run_joins(query_info& query, vector<relList>& relations, unordered_map< uin
 			//send relations to RadxHashJoin
 			result* results = RadixHashJoin(relR, relS);
 			//get results to intermediate
-			update_intermediate(intermediate, results, join);
+			intermediate = update_intermediate(intermediate, results, join, query.table.size());
 			//free process' structures
 			free(relR->tuples);
 			free(relS->tuples);
