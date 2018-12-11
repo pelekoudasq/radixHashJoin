@@ -132,8 +132,30 @@ relation *create_relation(uint64_t join_table, vector<relList>& relations, uint6
 }
 
 void change_intermediate(vector< vector<uint64_t> >& intermediate, vector< vector<uint64_t> >& intermediate_upd, uint64_t rowid1, uint64_t rowid2, 
-	size_t table_existing, size_t table_n_existing){
+	size_t table_existing, size_t table_n_existing, size_t tableSize){
 
+	for (size_t element = 0; element < intermediate[table_existing].size(); element++){
+		if (intermediate[table_existing].at(element) == rowid1){
+			for (size_t i = 0; i < tableSize; ++i) {
+				if(!intermediate[i].empty())
+					intermediate_upd[i].push_back(intermediate[i].at(element));
+			}
+			intermediate_upd[table_n_existing].push_back(rowid2);
+		}
+	}
+}
+
+void change_both_intermediate(vector< vector<uint64_t> >& intermediate, vector< vector<uint64_t> >& intermediate_upd, uint64_t rowid1, uint64_t rowid2, 
+	size_t table1, size_t table2, size_t tableSize){
+
+	for (size_t element = 0; element < intermediate[table1].size(); element++){
+		if (intermediate[table1].at(element) == rowid1 && intermediate[table2].at(element) == rowid2){
+			for (size_t i = 0; i < tableSize; ++i) {
+				if(!intermediate[i].empty())
+					intermediate_upd[i].push_back(intermediate[i].at(element));
+			}
+		}
+	}
 }
 
 vector< vector<uint64_t> > update_intermediate(vector< vector<uint64_t> >& intermediate, result *results, join_info& join, size_t tableSize){
@@ -172,21 +194,11 @@ vector< vector<uint64_t> > update_intermediate(vector< vector<uint64_t> >& inter
 		
 		//if both are not empty, then we have to parse them both to find the matching pairs
 		//in the intermediate and the results from the join
-		
-		return intermediate_upd;
-
-	} else {
-		
-		//else one of them is empty, so as we parse the results, we search the instermediate of the
-		//table that already exists and we create the new intermediate
-
 		for (int64_t i=0; i < results->size; i++) {
 			if (intermediate[join.table2].empty())
-				change_intermediate(intermediate, intermediate_upd, page[i].keyR, page[i].keyS, join.table1, join.table2);
+				change_both_intermediate(intermediate, intermediate_upd, page[i].keyR, page[i].keyS, join.table1, join.table2, tableSize);
 			else
-				change_intermediate(intermediate, intermediate_upd, page[i].keyS, page[i].keyR, join.table2, join.table1);
-			// intermediate[join.table1].push_back(page[i].keyR);
-			// intermediate[join.table2].push_back(page[i].keyS);
+				change_both_intermediate(intermediate, intermediate_upd, page[i].keyS, page[i].keyR, join.table2, join.table1, tableSize);
 		}
 		
 		temp = temp->next;
@@ -194,11 +206,33 @@ vector< vector<uint64_t> > update_intermediate(vector< vector<uint64_t> >& inter
 			page = (key_tuple*)&temp[1];
 			for (int64_t i=0; i < results->capacity; i++) {
 				if (intermediate[join.table2].empty())
-					change_intermediate(intermediate, intermediate_upd, page[i].keyR, page[i].keyS, join.table1, join.table2);
+					change_both_intermediate(intermediate, intermediate_upd, page[i].keyR, page[i].keyS, join.table1, join.table2, tableSize);
 				else
-					change_intermediate(intermediate, intermediate_upd, page[i].keyS, page[i].keyR, join.table2, join.table1);
-				// intermediate[join.table1].push_back(page[i].keyR);
-				// intermediate[join.table2].push_back(page[i].keyS);
+					change_both_intermediate(intermediate, intermediate_upd, page[i].keyS, page[i].keyR, join.table2, join.table1, tableSize);
+			}
+			temp = temp->next;
+		}
+		return intermediate_upd;
+
+	} else {
+		
+		//else one of them is empty, so as we parse the results, we search the instermediate of the
+		//table that already exists and we create the new intermediate
+		for (int64_t i=0; i < results->size; i++) {
+			if (intermediate[join.table2].empty())
+				change_intermediate(intermediate, intermediate_upd, page[i].keyR, page[i].keyS, join.table1, join.table2, tableSize);
+			else
+				change_intermediate(intermediate, intermediate_upd, page[i].keyS, page[i].keyR, join.table2, join.table1, tableSize);
+		}
+		
+		temp = temp->next;
+		while (temp != NULL) {
+			page = (key_tuple*)&temp[1];
+			for (int64_t i=0; i < results->capacity; i++) {
+				if (intermediate[join.table2].empty())
+					change_intermediate(intermediate, intermediate_upd, page[i].keyR, page[i].keyS, join.table1, join.table2, tableSize);
+				else
+					change_intermediate(intermediate, intermediate_upd, page[i].keyS, page[i].keyR, join.table2, join.table1, tableSize);
 			}
 			temp = temp->next;
 		}
@@ -207,11 +241,21 @@ vector< vector<uint64_t> > update_intermediate(vector< vector<uint64_t> >& inter
 	
 }
 
+uint64_t column_proj(vector<relList>& relations, uint64_t table_number, uint64_t column_number, vector<uint64_t>& vec){
+
+	uint64_t sum = 0;
+	size_t offset = column_number*relations[table_number].num_tuples;
+	for (size_t i = 0; i < vec.size(); i++){
+		sum = sum + relations[table_number].value[offset+vec.at(i)];
+	}
+	return sum;
+}
+
 void run_joins(query_info& query, vector<relList>& relations, unordered_map< uint64_t, unordered_set<uint64_t> >& filtered) {
 
 	vector<join_info>& joins = query.join;
 	vector< vector<uint64_t> > intermediate(query.table.size());
-	printf("run_join\n");
+	// printf("run_join\n");
 	for (auto&& join : joins) {
 		if ( join.table1 == join.table2 ){
 			uint64_t table_number = query.table[join.table1];
@@ -237,30 +281,44 @@ void run_joins(query_info& query, vector<relList>& relations, unordered_map< uin
 			empty_list(results);
 			free(results);
 		}
-		for (size_t i = 0; i < query.table.size(); ++i) {
-			if (filtered[i].empty())
-				printf("'0' ");
-			else
-				printf("%ld ", filtered[i].size());
-		}
-		printf("\n");
-		for (size_t i = 0; i < query.table.size(); ++i) {
-			if (intermediate[i].empty())
-				printf("'0' ");
-			else
-				printf("%ld ", intermediate[i].size());
-		}
-		printf("\n");
+		// for (size_t i = 0; i < query.table.size(); ++i) {
+		// 	if (intermediate[i].empty())
+		// 		printf("'0' ");
+		// 	else
+		// 		printf("%ld ", intermediate[i].size());
+		// }
+		// printf("\n");
 		// break;
 	}
+	printf("RESULTS ");
+	vector<proj_info>& projections = query.proj;
+	for (auto&& proj : projections){
+		printf("%ld ", column_proj(relations, query.table[proj.table], proj.column, intermediate[proj.table]));
+	}
+	printf("\n");
 }
 
 void execute(query_info& query, vector<relList>& relations) {
 
 	unordered_map< uint64_t, unordered_set<uint64_t> >* filtered = run_filters(query, relations); // size = query.table.size()
-
+	bool filtered_out = false;
+	for (size_t i = 0; i < query.table.size(); i++) {
+		if ((*filtered)[i].empty()){
+			filtered_out = true;
+			break;
+		}
+	}
 	// Run joins.
-	run_joins(query, relations, *filtered);
+	if(!filtered_out)
+		run_joins(query, relations, *filtered);
+	else{
+		printf("RESULTS(FL) ");
+		vector<proj_info>& projections = query.proj;
+		for (auto&& proj : projections){
+			printf("NULL ");
+		}
+		printf("\n");
+	}
 	// for (pair<uint64_t, unordered_set<uint64_t>> table : *filtered) {
 	// 	printf("---Table %d---\n", table. );
 	// 	for (auto&& rowid : table.second) {
