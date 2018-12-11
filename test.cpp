@@ -290,7 +290,7 @@ void run_joins(query_info& query, vector<relList>& relations, unordered_map< uin
 		// printf("\n");
 		// break;
 	}
-	printf("RESULTS ");
+	//printf("RESULTS ");
 	vector<proj_info>& projections = query.proj;
 	for (auto&& proj : projections){
 		printf("%ld ", column_proj(relations, query.table[proj.table], proj.column, intermediate[proj.table]));
@@ -312,7 +312,7 @@ void execute(query_info& query, vector<relList>& relations) {
 	if(!filtered_out)
 		run_joins(query, relations, *filtered);
 	else{
-		printf("RESULTS(FL) ");
+		//printf("RESULTS(FL) ");
 		vector<proj_info>& projections = query.proj;
 		for (auto&& proj : projections){
 			printf("NULL ");
@@ -383,7 +383,7 @@ int main(void){
 
 		}
 	}
-	print_batches(batches);
+	//print_batches(batches);
 
 	for (auto&& relation : relations){
 		munmap(relation.value, relation.num_tuples*relation.num_columns*sizeof(uint64_t));
