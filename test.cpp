@@ -292,8 +292,16 @@ void run_joins(query_info& query, vector<relList>& relations, unordered_map< uin
 	}
 	//printf("RESULTS ");
 	vector<proj_info>& projections = query.proj;
-	for (auto&& proj : projections){
-		printf("%ld ", column_proj(relations, query.table[proj.table], proj.column, intermediate[proj.table]));
+	// for (auto&& proj : projections){
+	// 	printf("%ld ", column_proj(relations, query.table[proj.table], proj.column, intermediate[proj.table]));
+	// }
+	// printf("\n");
+	vector<proj_info>::const_iterator it = projections.begin();
+	printf("%ld", column_proj(relations, query.table[it->table], it->column, intermediate[it->table]));
+	it++;
+	while (it != projections.end()) {
+		printf(" %ld", column_proj(relations, query.table[it->table], it->column, intermediate[it->table]));
+		it++;
 	}
 	printf("\n");
 }
@@ -314,8 +322,16 @@ void execute(query_info& query, vector<relList>& relations) {
 	else{
 		//printf("RESULTS(FL) ");
 		vector<proj_info>& projections = query.proj;
-		for (auto&& proj : projections){
-			printf("NULL ");
+		// for (auto&& proj : projections){
+		// 	printf("NULL ");
+		// }
+		// printf("\n");
+		vector<proj_info>::const_iterator it = projections.begin();
+		printf("NULL");
+		it++;
+		while (it != projections.end()) {
+			printf(" NULL");
+			it++;
 		}
 		printf("\n");
 	}
