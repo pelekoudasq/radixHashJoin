@@ -1,5 +1,5 @@
 CC			= g++
-CXXFLAGS	= -std=c++11 -g3 -Wall -Wextra -Wconversion
+CXXFLAGS	= -std=c++11 -O3 -Wall -Wextra -Wconversion
 JOIN		= join
 OBJS		= test.o aux_fun/auxFun.o result_list/resultList.o join.o query_handler/query.o
 
