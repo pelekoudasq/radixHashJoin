@@ -1,3 +1,6 @@
 join
 *.o
 results
+cmake-build-debug
+.idea
+CMakeLists.txt

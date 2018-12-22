@@ -1,15 +1,14 @@
-CC			= g++
-CXXFLAGS	= -std=c++11 -O3 -Wall -Wextra -Wconversion
-JOIN		= join
-OBJS		= test.o aux_fun/auxFun.o result_list/resultList.o join.o query_handler/query.o
+CC          = $(CXX)
+CXXFLAGS    = -O3 -Wall -Wextra -Wconversion
+EXE         = ./join
+OBJS        = Query.o Result.o join.o main.o test.o auxFun.o JobScheduler.o
 
-.PHONY: all clean
-all: $(JOIN)
+all: $(EXE)
 
-$(JOIN): $(OBJS)
+$(EXE): $(OBJS)
 
 clean:
-	rm -f $(OBJS) $(JOIN)
+	rm -f $(OBJS) $(EXE)
 
 run: all
-	cat small/small.init small/small.work | (time --format="Time Elapsed: %E" ./join)
+	@cat small/small.init small/small.work | (time --format="Time Elapsed: %E" $(EXE))

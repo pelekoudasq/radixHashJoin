@@ -1,8 +1,9 @@
 #ifndef _JOIN_
 #define _JOIN_
 
-#include "result_list/resultList.h"
+#include "structs.h"
+#include "Result.h"
 
-result *RadixHashJoin(relation*, relation*);
+Result *RadixHashJoin(relation &, relation &);
 
 #endif
