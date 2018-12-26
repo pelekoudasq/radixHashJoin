@@ -11,6 +11,10 @@ struct relList {
     uint64_t num_tuples;
     uint64_t num_columns;
     uint64_t *value;
+
+    explicit relList(char *filename);
+
+    ~relList();
 };
 
 struct tuple {

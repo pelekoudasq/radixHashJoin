@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include "structs.h"
 
 struct key_tuple {
     uint64_t keyR;
@@ -19,9 +20,11 @@ struct Result {
     size_t size;                // Size of current bucket_info (all the other bucket_infos and memory behind are full)
     bucket_info *head;          // Current bucket_info
 
-    void init_list();
-    void empty_list();
     void add_result(uint64_t, uint64_t);
+
+    void RadixHashJoin(relation &, relation &);
+
+    Result();
     ~Result();
 };
 

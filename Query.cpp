@@ -1,7 +1,5 @@
 #include "Query.h"
 #include "test.h"
-#include "Result.h"
-#include "join.h"
 #include <iostream>
 
 using namespace std;
@@ -52,19 +50,9 @@ void Query::read_predicates() {
         uint64_t unknown = read_number(getchar(), &ch);        //read next number after operation, save delimiter
         if (ch == '.') {                                        //if delimiter is (.) we have join
             uint64_t column2 = read_number(getchar(), &ch); //read number(column2), save what follows( & or | )
-            join_info temp;
-            temp.table1 = table1;
-            temp.table2 = unknown;
-            temp.column1 = column1;
-            temp.column2 = column2;
-            join.push_back(temp);
+            join.emplace_back(table1, column1, unknown, column2);
         } else {
-            filter_info temp;
-            temp.table = table1;
-            temp.column = column1;
-            temp.op = op;
-            temp.number = unknown;
-            filter.push_back(temp);
+            filter.emplace_back(table1, column1, op, unknown);
         }
     }
 }
@@ -76,10 +64,7 @@ void Query::read_projections() {
     while (ch != '\n') {                                      //while not end of line
         uint64_t table = read_number(getchar(), &ch);         //read number(table), ignore->(.) that follows it
         uint64_t column = read_number(getchar(), &ch);        //read number(column), keep ch to check if \n
-        proj_info temp;
-        temp.table = table;
-        temp.column = column;
-        proj.push_back(temp);
+        proj.emplace_back(table, column);
     }
 }
 
@@ -121,11 +106,10 @@ void printNULL(const Query &query) {
 void run_joins(Query &query, vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
     vector<join_info> &joins = query.join;
     vector<vector<uint64_t> > intermediate(query.table.size());
-    // printf("run_join\n");
     for (auto &&join : joins) {
         if (join.table1 == join.table2) {
             uint64_t table_number = query.table[join.table1];
-            parse_table(join, relations, table_number, filtered, intermediate, query.table.size());
+            parse_table(join, relations, table_number, filtered, intermediate);
         } else {
             uint64_t table1_number = query.table[join.table1];
             uint64_t column1_number = join.column1;
@@ -136,20 +120,19 @@ void run_joins(Query &query, vector<relList> &relations, unordered_map<uint64_t,
             relation relR;
             relation relS;
             relR.create_relation(join.table1, relations[table1_number], column1_number, filtered,
-                                             intermediate[join.table1]);
+                                 intermediate[join.table1]);
             relS.create_relation(join.table2, relations[table2_number], column2_number, filtered,
-                                             intermediate[join.table2]);
+                                 intermediate[join.table2]);
             //send relations to RadxHashJoin
-            Result *results = RadixHashJoin(relR, relS);
+            Result results;
+            results.RadixHashJoin(relR, relS);
             //if we have no results in this join, then empty the intermediate, no results
-            if (results->head == nullptr) {
-                delete results;
+            if (results.head == nullptr) {
                 break;
             }
             //get results to intermediate
-            intermediate = update_intermediate(intermediate, results, join, query.table.size());
+            update_intermediate(intermediate, results, join);
             //free process' structures
-            delete results;
         }
     }
 
@@ -173,3 +156,12 @@ void Query::print() {
         printVAL(*this);
     }
 }
+
+proj_info::proj_info(uint64_t table, uint64_t column) :
+        table(table), column(column), sum(0) {}
+
+filter_info::filter_info(uint64_t table, uint64_t column, int op, uint64_t number) :
+        table(table), column(column), op(op), number(number) {}
+
+join_info::join_info(uint64_t table1, uint64_t column1, uint64_t table2, uint64_t column2) :
+        table1(table1), column1(column1), table2(table2), column2(column2) {}

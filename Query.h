@@ -6,6 +6,8 @@
 #include "structs.h"
 
 struct join_info {
+    join_info(uint64_t table1, uint64_t column1, uint64_t table2, uint64_t column2);
+
     uint64_t table1;
     uint64_t column1;
     uint64_t table2;
@@ -13,6 +15,8 @@ struct join_info {
 };
 
 struct filter_info {
+    filter_info(uint64_t table, uint64_t column, int op, uint64_t number);
+
     uint64_t table;
     uint64_t column;
     int op;
@@ -20,6 +24,8 @@ struct filter_info {
 };
 
 struct proj_info {
+    proj_info(uint64_t table, uint64_t column);
+
     uint64_t table;
     uint64_t column;
     uint64_t sum;
@@ -38,6 +44,5 @@ struct Query {
     void execute(std::vector<relList> &relations);
     void print();
 };
-
 
 #endif //JOIN_QUERY_H
