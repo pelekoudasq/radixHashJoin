@@ -7,7 +7,7 @@
 #include "Query.h"
 #include "Result.h"
 
-void parse_table(join_info &join, std::vector<relList> &relations, uint64_t table_number,
+void parse_table(join_info &join, relList &relation,
                  std::unordered_map<uint64_t, std::unordered_set<uint64_t> > &filtered,
                  std::vector<std::vector<uint64_t> > &intermediate);
 

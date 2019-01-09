@@ -4,7 +4,7 @@
 /* This is the number of the n less significant bits */
 #define HASH_LSB 8
 
-#define BUCKET_SIZE (1024 * 1024)
+#define BUCKET_SIZE (128 * 1024)
 
 /* Initialize result list. */
 Result::Result() {

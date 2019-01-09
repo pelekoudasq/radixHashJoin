@@ -50,19 +50,18 @@ bool run_filters(Query &query, vector<relList> &relations,
 /* If the table has not been joined before, just parse original data and add matching rows to intermediate.
  * Else, get data from intermediate and match those, enter matching rows to intermediate.
  */
-void parse_table(join_info &join, vector<relList> &relations, uint64_t table_number,
-                 unordered_map<uint64_t, unordered_set<uint64_t> > &filtered, vector<vector<uint64_t> > &intermediate) {
+void parse_table(join_info &join, relList &relation, unordered_map<uint64_t,
+  unordered_set<uint64_t> > &filtered, vector<vector<uint64_t> > &intermediate) {
 
     uint64_t column1_number = join.column1;
     uint64_t column2_number = join.column2;
-    size_t offset = relations[table_number].num_tuples;
+    size_t offset = relation.num_tuples;
 
     if (intermediate[join.table1].empty()) {
-        printf("DO I NEVER DO THIS?\n");
         unordered_map<uint64_t, unordered_set<uint64_t> >::const_iterator table = filtered.find(join.table1);
         for (auto &&rowid : table->second) {
-            uint64_t value1 = relations[table_number].value[column1_number * offset + rowid];
-            uint64_t value2 = relations[table_number].value[column2_number * offset + rowid];
+            uint64_t value1 = relation.value[column1_number * offset + rowid];
+            uint64_t value2 = relation.value[column2_number * offset + rowid];
             if (value1 == value2) {
                 intermediate[join.table1].push_back(rowid);
             }
@@ -72,8 +71,8 @@ void parse_table(join_info &join, vector<relList> &relations, uint64_t table_num
         auto i = oldTable.end();
         //size_t position = oldTable.size();
         while (i != oldTable.begin()) {
-            uint64_t value1 = relations[table_number].value[column1_number * offset + (*i)];
-            uint64_t value2 = relations[table_number].value[column2_number * offset + (*i)];
+            uint64_t value1 = relation.value[column1_number * offset + (*i)];
+            uint64_t value2 = relation.value[column2_number * offset + (*i)];
             if (value1 != value2) {
                 //erase joined values from all tables
                 for (auto &k : intermediate) {
@@ -90,23 +89,27 @@ void parse_table(join_info &join, vector<relList> &relations, uint64_t table_num
 /* for case 2: one of them is empty.
  * Create new updated intermediate and only pass data that match the new joined data.
  * Update all other full intermediates and create intermediate for the one that was empty.
+ * table1 is the full table of the intermediate
+ * table2 is the empty table of the intermediate_upd
  */
+clock_t timer;
 void change_intermediate(const vector<vector<uint64_t> > &intermediate, vector<vector<uint64_t> > &intermediate_upd,
-                         uint64_t rowid1, uint64_t rowid2, size_t table_existing, size_t table_n_existing) {
+                        uint64_t rowid1, uint64_t rowid2, const vector<uint64_t> &table1, vector<uint64_t> &table2) {
 
-    vector<uint64_t> &table_n = intermediate_upd[table_n_existing];
-    for (size_t element = 0; element < intermediate[table_existing].size(); element++) {
-        if (intermediate[table_existing][element] == rowid1) {
-            for (size_t i = 0; i < intermediate.size(); ++i) {
-                if (!intermediate[i].empty())
-                    intermediate_upd[i].push_back(intermediate[i][element]);
-            }
-            table_n.push_back(rowid2);
-        }
-    }
+   size_t isize = intermediate.size();
+   size_t size = table1.size();
+   for (size_t element = 0; element < size; element++) {
+       if (table1[element] == rowid1) {
+           for (size_t i = 0; i < isize; ++i) {
+               if (!intermediate[i].empty())
+                   intermediate_upd[i].push_back(intermediate[i][element]);
+           }
+           table2.push_back(rowid2);
+       }
+   }
 }
 
-/* for case 3: both are full( both have been joined before) 
+/* for case 3: both are full (both have been joined before)
  * Create new updated intermediate and only pass data that match the new joined data.
  * Update all other full intermediates.
  */
@@ -114,9 +117,11 @@ void change_both_intermediate(const vector<vector<uint64_t> > &intermediate, con
                               const vector<uint64_t> &table2,
                               vector<vector<uint64_t> > &intermediate_upd, uint64_t rowid1, uint64_t rowid2) {
 
-    for (size_t element = 0; element < table1.size(); element++) {
+    size_t isize = intermediate.size();
+    size_t size = table1.size();
+    for (size_t element = 0; element < size; element++) {
         if (table1[element] == rowid1 && table2[element] == rowid2) {
-            for (size_t i = 0; i < intermediate.size(); ++i) {
+            for (size_t i = 0; i < isize; ++i) {
                 if (!intermediate[i].empty()) {
                     intermediate_upd[i].push_back(intermediate[i][element]);
                 }
@@ -125,10 +130,14 @@ void change_both_intermediate(const vector<vector<uint64_t> > &intermediate, con
     }
 }
 
+clock_t time1;
+size_t count1;
 /* Update for case 1:  both intermediates are empty(no previous join for either).
  * Reserve the size of result for each intermediate and push back, one by one.
  */
 void getVector(vector<vector<uint64_t>> &intermediate, const join_info &join, const bucket_info *temp, size_t size) {
+    count1++;
+    clock_t t = clock();
     auto *page = (key_tuple *) &temp[1];
     vector<uint64_t> &table1 = intermediate[join.table1];
     vector<uint64_t> &table2 = intermediate[join.table2];
@@ -138,41 +147,49 @@ void getVector(vector<vector<uint64_t>> &intermediate, const join_info &join, co
         table1.push_back(kt->keyR);
         table2.push_back(kt->keyS);
     }
+    time1 += clock() - t;
 }
+clock_t time2;
+size_t count2;
 /* Update for case 2: one of them is empty.
  * Call change_intermediate, according to which intermediate is empty.
  */
 void getVector2(const vector<vector<uint64_t>> &intermediate, const join_info &join,
                 vector<vector<uint64_t>> &intermediate_upd, const bucket_info *temp, size_t size) {
+    count2++;
+    clock_t t = clock();
     auto page = (key_tuple *) &temp[1];
-    if (intermediate[join.table2].empty()) {
+    if (intermediate[join.table1].empty()) {
+        const vector<uint64_t> &table1 = intermediate[join.table2];
+        vector<uint64_t> &table2 = intermediate_upd[join.table1];
         for (key_tuple *kt = page; kt < page + size; kt++) {
-            change_intermediate(intermediate, intermediate_upd, kt->keyR, kt->keyS, join.table1, join.table2);
+          change_intermediate(intermediate, intermediate_upd, kt->keyS, kt->keyR, table1, table2);
         }
     } else {
+        const vector<uint64_t> &table1 = intermediate[join.table1];
+        vector<uint64_t> &table2 = intermediate_upd[join.table2];
         for (key_tuple *kt = page; kt < page + size; kt++) {
-            change_intermediate(intermediate, intermediate_upd, kt->keyS, kt->keyR, join.table2, join.table1);
+          change_intermediate(intermediate, intermediate_upd, kt->keyR, kt->keyS, table1, table2);
         }
     }
+    time2 += clock() - t;
 }
 
+clock_t time3;
+size_t count3;
 /* Update for case 3: both are full( both have been joined before).
- *      ????
+ * For each result, update intermediate
  */
 void getVector3(const vector<vector<uint64_t>> &intermediate, const join_info &join,
                 vector<vector<uint64_t>> &intermediate_upd, const bucket_info *temp, size_t size) {
+                  count3++;
+                  clock_t t = clock();
     auto page = (key_tuple *) &temp[1];
-    if (intermediate[join.table2].empty()) {
-        for (key_tuple *kt = page; kt < page + size; kt++) {
-            change_both_intermediate(intermediate, intermediate[join.table1], intermediate[join.table2],
-                                     intermediate_upd, kt->keyR, kt->keyS);
-        }
-    } else {
-        for (key_tuple *kt = page; kt < page + size; kt++) {
-            change_both_intermediate(intermediate, intermediate[join.table2], intermediate[join.table1],
-                                     intermediate_upd, kt->keyS, kt->keyR);
-        }
+    for (key_tuple *kt = page; kt < page + size; kt++) {
+        change_both_intermediate(intermediate, intermediate[join.table1], intermediate[join.table2],
+                                 intermediate_upd, kt->keyR, kt->keyS);
     }
+    time3 += clock() - t;
 }
 
 /* Update intermediate after a successful(non-empty) join between 2 different tables.
@@ -181,13 +198,18 @@ void getVector3(const vector<vector<uint64_t>> &intermediate, const join_info &j
  * 2) one of them is empty
  * 3) both are full( both have been joined before)
  */
+size_t t1;
+size_t t2;
+size_t t3;
 void update_intermediate(vector<vector<uint64_t> > &intermediate, const Result &results, join_info &join) {
     vector<vector<uint64_t> > intermediate_upd(intermediate.size());
-
+    for (size_t i = 0; i < intermediate.size(); i++) {
+      intermediate_upd[i].reserve(intermediate[i].size());
+    }
     bucket_info *node = results.head;
 
-
     if (intermediate[join.table1].empty() && intermediate[join.table2].empty()) {
+        t1++;
         //intermediate results for both tables are empty
         //push back all results to their intermediate vectors
         getVector(intermediate_upd, join, node, results.size);
@@ -197,6 +219,7 @@ void update_intermediate(vector<vector<uint64_t> > &intermediate, const Result &
             node = node->next;
         }
     } else if (intermediate[join.table1].empty() || intermediate[join.table2].empty()) {
+        t2++;
         //one of them is empty, as we parse the results, we search the intermediate of the
         //table that already exists and we create the new intermediate
         getVector2(intermediate, join, intermediate_upd, node, results.size);
@@ -206,6 +229,7 @@ void update_intermediate(vector<vector<uint64_t> > &intermediate, const Result &
             node = node->next;
         }
     } else {
+        t3++;
         //both are not empty, we have to parse them both to find the matching pairs
         //in the intermediate and the results from the join
         getVector3(intermediate, join, intermediate_upd, node, results.size);

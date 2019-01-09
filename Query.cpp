@@ -113,7 +113,7 @@ void run_joins(Query &query, vector<relList> &relations, unordered_map<uint64_t,
     for (auto &&join : joins) {
         if (join.table1 == join.table2) {
             uint64_t table_number = query.table[join.table1];
-            parse_table(join, relations, table_number, filtered, intermediate);
+            parse_table(join, relations[table_number], filtered, intermediate);
         } else {
             uint64_t table1_number = query.table[join.table1];
             uint64_t column1_number = join.column1;

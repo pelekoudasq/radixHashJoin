@@ -1,6 +1,9 @@
 #ifndef JOIN_JOBSCHEDULER_H
 #define JOIN_JOBSCHEDULER_H
 
+#include <pthread.h>
+#include <vector>
+
 /**
  * Abstract Class Job
  */
@@ -13,15 +16,25 @@ public:
 /**
  * This method should be implemented by subclasses.
  */
-    virtual int Run() = 0;
+    virtual int run(void) = 0;
+};
+
+class Job1 : public Job {
+public:
+   int run(void);
 };
 
 /**
  * Class JobScheduler
  */
 class JobScheduler {
-    int num_of_threads;
+    size_t num_of_threads;
+    pthread_t* threads;
+    pthread_mutex_t queueLock;
+    pthread_cond_t cond_nonempty;
+    std::vector<Job*> q;
 public:
+    void threadWork();
     JobScheduler() = default;
 
     ~JobScheduler() = default;
@@ -30,7 +43,7 @@ public:
  * Initializes the JobScheduler with the number of open threads.
  * Returns true if everything done right false else.
  */
-    bool init(int num_of_threads);
+    bool init(size_t num_of_threads);
 
 /**
  * Free all resources that the are allocated by JobScheduler

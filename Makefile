@@ -1,6 +1,8 @@
 CC       = $(CXX)
 CXXFLAGS = -O3 -Wall -Wextra -Wconversion -std=c++11
-EXE      = $(shell basename $(CURDIR))
+LDFLAGS  = -pthread
+# EXE      = $(shell basename $(CURDIR))
+EXE      = join
 OBJS     = $(patsubst %.cpp, %.o, $(wildcard *.cpp))
 
 $(EXE): $(OBJS)
