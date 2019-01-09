@@ -1,5 +1,5 @@
 CC       = $(CXX)
-CXXFLAGS = -O3 -Wall -Wextra -Wconversion
+CXXFLAGS = -O3 -Wall -Wextra -Wconversion -std=c++11
 EXE      = $(shell basename $(CURDIR))
 OBJS     = $(patsubst %.cpp, %.o, $(wildcard *.cpp))
 

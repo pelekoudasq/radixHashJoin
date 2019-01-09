@@ -5,6 +5,11 @@ using std::vector;
 using std::unordered_map;
 using std::unordered_set;
 
+/* Run filters first.
+ * For all tables in filters, get all rows and then erase
+ * all those that do not match the filter.
+ * If a filter returned no results, return true, else false.
+ */
 bool run_filters(Query &query, vector<relList> &relations,
                  unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
     vector<filter_info> &filter = query.filter;
@@ -42,6 +47,9 @@ bool run_filters(Query &query, vector<relList> &relations,
     return false;
 }
 
+/* If the table has not been joined before, just parse original data and add matching rows to intermediate.
+ * Else, get data from intermediate and match those, enter matching rows to intermediate.
+ */
 void parse_table(join_info &join, vector<relList> &relations, uint64_t table_number,
                  unordered_map<uint64_t, unordered_set<uint64_t> > &filtered, vector<vector<uint64_t> > &intermediate) {
 
@@ -79,6 +87,10 @@ void parse_table(join_info &join, vector<relList> &relations, uint64_t table_num
     }
 }
 
+/* for case 2: one of them is empty.
+ * Create new updated intermediate and only pass data that match the new joined data.
+ * Update all other full intermediates and create intermediate for the one that was empty.
+ */
 void change_intermediate(const vector<vector<uint64_t> > &intermediate, vector<vector<uint64_t> > &intermediate_upd,
                          uint64_t rowid1, uint64_t rowid2, size_t table_existing, size_t table_n_existing) {
 
@@ -94,6 +106,10 @@ void change_intermediate(const vector<vector<uint64_t> > &intermediate, vector<v
     }
 }
 
+/* for case 3: both are full( both have been joined before) 
+ * Create new updated intermediate and only pass data that match the new joined data.
+ * Update all other full intermediates.
+ */
 void change_both_intermediate(const vector<vector<uint64_t> > &intermediate, const vector<uint64_t> &table1,
                               const vector<uint64_t> &table2,
                               vector<vector<uint64_t> > &intermediate_upd, uint64_t rowid1, uint64_t rowid2) {
@@ -109,6 +125,9 @@ void change_both_intermediate(const vector<vector<uint64_t> > &intermediate, con
     }
 }
 
+/* Update for case 1:  both intermediates are empty(no previous join for either).
+ * Reserve the size of result for each intermediate and push back, one by one.
+ */
 void getVector(vector<vector<uint64_t>> &intermediate, const join_info &join, const bucket_info *temp, size_t size) {
     auto *page = (key_tuple *) &temp[1];
     vector<uint64_t> &table1 = intermediate[join.table1];
@@ -120,7 +139,9 @@ void getVector(vector<vector<uint64_t>> &intermediate, const join_info &join, co
         table2.push_back(kt->keyS);
     }
 }
-
+/* Update for case 2: one of them is empty.
+ * Call change_intermediate, according to which intermediate is empty.
+ */
 void getVector2(const vector<vector<uint64_t>> &intermediate, const join_info &join,
                 vector<vector<uint64_t>> &intermediate_upd, const bucket_info *temp, size_t size) {
     auto page = (key_tuple *) &temp[1];
@@ -135,6 +156,9 @@ void getVector2(const vector<vector<uint64_t>> &intermediate, const join_info &j
     }
 }
 
+/* Update for case 3: both are full( both have been joined before).
+ *      ????
+ */
 void getVector3(const vector<vector<uint64_t>> &intermediate, const join_info &join,
                 vector<vector<uint64_t>> &intermediate_upd, const bucket_info *temp, size_t size) {
     auto page = (key_tuple *) &temp[1];
@@ -151,10 +175,17 @@ void getVector3(const vector<vector<uint64_t>> &intermediate, const join_info &j
     }
 }
 
+/* Update intermediate after a successful(non-empty) join between 2 different tables.
+ * Different cases for if:
+ * 1) both intermediates are empty(no previous join for either)
+ * 2) one of them is empty
+ * 3) both are full( both have been joined before)
+ */
 void update_intermediate(vector<vector<uint64_t> > &intermediate, const Result &results, join_info &join) {
     vector<vector<uint64_t> > intermediate_upd(intermediate.size());
 
     bucket_info *node = results.head;
+
 
     if (intermediate[join.table1].empty() && intermediate[join.table2].empty()) {
         //intermediate results for both tables are empty

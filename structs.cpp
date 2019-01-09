@@ -10,6 +10,8 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
+
+/* Get relations and data from line read from user. */
 relList::relList(char *filename) {
     int fd = open(filename, O_RDONLY);
     if (read(fd, this, 2 * sizeof(uint64_t)) != 2 * sizeof(uint64_t)) return;
@@ -63,6 +65,9 @@ relation::~relation() {
     delete[] tuples;
 }
 
+/* Return certain column of a relation in the form
+ * of table of tuples for using RadixHashJoin
+ */
 void relation::foo(const relList &rel, size_t offset, const unordered_set<uint64_t> &uniqueValues) {
     num_tuples = uniqueValues.size();
     tuples = new tuple[num_tuples];
@@ -74,6 +79,8 @@ void relation::foo(const relList &rel, size_t offset, const unordered_set<uint64
     }
 }
 
+/* Get data either from intermediate or filters and call foo for right format
+ */
 void relation::create_relation(uint64_t join_table, relList &rel, uint64_t column_number,
                                unordered_map<uint64_t, unordered_set<uint64_t> > &filtered,
                                vector<uint64_t> &inter) {

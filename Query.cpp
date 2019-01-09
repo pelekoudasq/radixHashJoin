@@ -18,7 +18,6 @@ uint64_t read_number(int ch, int *delim) {
 
 /* Gets the tables needed for the query.
  * Also, checks for end of input and returns accordingly.
- * Takes the query struct as argument to update.
  * Returns true on batch end.
  */
 bool Query::read_relations() {
@@ -38,8 +37,7 @@ bool Query::read_relations() {
 }
 
 
-/* Reads predicates for query. Stores filters and joins separetely.
-	Takes the query struct as argument to update.*/
+/* Reads predicates for query. Stores filters and joins separetely.*/
 void Query::read_predicates() {
     int ch = '\0';
     while (ch != '|') {                                        //for every predicate
@@ -57,8 +55,7 @@ void Query::read_predicates() {
     }
 }
 
-/* Gets projections required.
-	Takes the query struct as argument to update. */
+/* Gets projections required. */
 void Query::read_projections() {
     int ch = '\0';
     while (ch != '\n') {                                      //while not end of line
@@ -68,6 +65,7 @@ void Query::read_projections() {
     }
 }
 
+/* Get sums for projections part */
 uint64_t column_proj(const vector<relList> &relations, uint64_t table_number, uint64_t column_number,
                      const vector<uint64_t> &vec) {
     const relList &rel = relations[table_number];
@@ -79,6 +77,7 @@ uint64_t column_proj(const vector<relList> &relations, uint64_t table_number, ui
     return sum;
 }
 
+/* Print projections when join has results. */
 void printVAL(const Query &query) {
     const vector<proj_info> &projections = query.proj;
     auto it = projections.begin();
@@ -91,6 +90,7 @@ void printVAL(const Query &query) {
     std::cout << std::endl;
 }
 
+/* Print projections when a join/filter has returned no results. */
 void printNULL(const Query &query) {
     const vector<proj_info> &projections = query.proj;
     auto it = projections.begin();
@@ -103,6 +103,10 @@ void printNULL(const Query &query) {
     std::cout << std::endl;
 }
 
+/* If self-join, just parse table.
+ * Else, make tuples into relation for join and RadixHashJoin.
+ * If join is empty, stop query and sum projections.
+ */
 void run_joins(Query &query, vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
     vector<join_info> &joins = query.join;
     vector<vector<uint64_t> > intermediate(query.table.size());
@@ -128,7 +132,8 @@ void run_joins(Query &query, vector<relList> &relations, unordered_map<uint64_t,
             results.RadixHashJoin(relR, relS);
             //if we have no results in this join, then empty the intermediate, no results
             if (results.head == nullptr) {
-                break;
+                break;              // should we just do print null here? maybe? no?
+                // or just filtered_out = true and before column_proj also check for that
             }
             //get results to intermediate
             update_intermediate(intermediate, results, join);
@@ -141,6 +146,7 @@ void run_joins(Query &query, vector<relList> &relations, unordered_map<uint64_t,
     }
 }
 
+/* Run filters, then joins */
 void Query::execute(vector<relList> &relations) {
     unordered_map<uint64_t, unordered_set<uint64_t> > filtered;
     filtered_out = run_filters(*this, relations, filtered);
@@ -149,6 +155,7 @@ void Query::execute(vector<relList> &relations) {
     }
 }
 
+/* Print out projections according to filters */
 void Query::print() {
     if (filtered_out) {
         printNULL(*this);
@@ -156,6 +163,8 @@ void Query::print() {
         printVAL(*this);
     }
 }
+
+/* Constructors for info structs. */
 
 proj_info::proj_info(uint64_t table, uint64_t column) :
         table(table), column(column), sum(0) {}
