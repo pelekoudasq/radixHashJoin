@@ -7,30 +7,7 @@
 
 using std::vector;
 
-extern clock_t t1;
-extern clock_t t2;
-extern clock_t t3;
-extern clock_t time1;
-extern clock_t time2;
-extern clock_t time3;
-extern clock_t timer;
-extern size_t count1;
-extern size_t count2;
-extern size_t count3;
-
-int main(void) {
-  JobScheduler js;
-  js.init(10);
-  js.schedule(new Job1());
-  js.schedule(new Job1());
-  js.schedule(new Job1());
-  js.schedule(new Job1());
-  js.barrier();
-  js.stop();
-  js.destroy();
-}
-
-int main1(void) {
+int main() {
     char *lineptr = nullptr;
     size_t n = 0;
     ssize_t lineSize;
@@ -72,9 +49,6 @@ int main1(void) {
             query.print();
         }
     }
-    printf("%ld / %ld / %ld\n", time1, count1, t1);
-    printf("%ld / %ld / %ld\n", time2, count2, t2);
-    printf("%ld / %ld / %ld\n", time3, count3, t3);
-    printf("%ld\n", timer);
+
     return 0;
 }

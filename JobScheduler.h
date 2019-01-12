@@ -2,7 +2,7 @@
 #define JOIN_JOBSCHEDULER_H
 
 #include <pthread.h>
-#include <vector>
+#include <queue>
 
 /**
  * Abstract Class Job
@@ -16,25 +16,27 @@ public:
 /**
  * This method should be implemented by subclasses.
  */
-    virtual int run(void) = 0;
+    virtual int run() = 0;
 };
 
 class Job1 : public Job {
 public:
-   int run(void);
+   int run() override;
 };
 
 /**
  * Class JobScheduler
  */
 class JobScheduler {
+    bool done;
     size_t num_of_threads;
     pthread_t* threads;
     pthread_mutex_t queueLock;
     pthread_cond_t cond_nonempty;
-    std::vector<Job*> q;
+    std::queue<Job*> q;
 public:
     void threadWork();
+
     JobScheduler() = default;
 
     ~JobScheduler() = default;

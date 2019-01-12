@@ -14,16 +14,16 @@ using std::vector;
 /* Get relations and data from line read from user. */
 relList::relList(char *filename) {
     int fd = open(filename, O_RDONLY);
-    if (read(fd, this, 2 * sizeof(uint64_t)) != 2 * sizeof(uint64_t)) return;
+    if (read(fd, &num_tuples, 2 * sizeof(uint64_t)) != 2 * sizeof(uint64_t)) return;
 //    read(fd, &num_tuples, sizeof(uint64_t));
 //    read(fd, &num_columns, sizeof(uint64_t));
-    value = (uint64_t *) mmap(nullptr, num_tuples * num_columns * sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fd, 0);
+    value = (uint64_t *) mmap(nullptr, (num_tuples * num_columns + 2) * sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fd, 0);
     value += 2;            //file offset
     close(fd);
 }
 
 relList::~relList() {
-    munmap(value, num_tuples * num_columns * sizeof(uint64_t));
+    munmap(value, (num_tuples * num_columns + 2) * sizeof(uint64_t));
 }
 
 /* First parsing through table
