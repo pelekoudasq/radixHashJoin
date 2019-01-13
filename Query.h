@@ -39,10 +39,14 @@ struct Query {
     bool filtered_out;
 
     bool read_relations();
+
     void read_predicates();
+
     void read_projections();
+
     void execute(std::vector<relList> &relations);
-    void print();
+
+    void print() const;
 };
 
 #endif //JOIN_QUERY_H

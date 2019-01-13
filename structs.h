@@ -12,9 +12,9 @@ struct relList {
     uint64_t num_columns;
     uint64_t *value;
 
-    explicit relList(char *filename);
+    void init(char *filename);
 
-    ~relList();
+    void destroy();
 };
 
 struct tuple {

@@ -17,7 +17,8 @@ int main() {
     while ((lineSize = getline(&lineptr, &n, stdin)) != -1 && strcmp(lineptr, "Done\n") != 0) {
         lineptr[lineSize - 1] = '\0';
         //open file and get contents
-        relations.emplace_back(lineptr);
+        relations.emplace_back();
+        relations.back().init(lineptr);
     }
     if (lineptr != nullptr)
         free(lineptr);
@@ -48,6 +49,10 @@ int main() {
         for (auto &&query : queries) {
             query.print();
         }
+    }
+
+    for (auto &&rel : relations) {
+        rel.destroy();
     }
 
     return 0;

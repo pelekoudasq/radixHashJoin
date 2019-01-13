@@ -133,12 +133,13 @@ void change_both_intermediate(const vector<vector<uint64_t> > &intermediate, con
  * Reserve the size of result for each intermediate and push back, one by one.
  */
 void getVector(vector<vector<uint64_t>> &intermediate, const join_info &join, const bucket_info *temp, size_t size) {
-    auto *page = (key_tuple *) &temp[1];
+    auto page = (key_tuple *) &temp[1];
     vector<uint64_t> &table1 = intermediate[join.table1];
     vector<uint64_t> &table2 = intermediate[join.table2];
     table1.reserve(size);
     table2.reserve(size);
-    for (key_tuple *kt = page; kt < page + size; kt++) {
+    auto s = page + size;
+    for (key_tuple *kt = page; kt < s; kt++) {
         table1.push_back(kt->keyR);
         table2.push_back(kt->keyS);
     }
@@ -150,16 +151,17 @@ void getVector(vector<vector<uint64_t>> &intermediate, const join_info &join, co
 void getVector2(const vector<vector<uint64_t>> &intermediate, const join_info &join,
                 vector<vector<uint64_t>> &intermediate_upd, const bucket_info *temp, size_t size) {
     auto page = (key_tuple *) &temp[1];
+    auto s = page + size;
     if (intermediate[join.table1].empty()) {
         const vector<uint64_t> &table1 = intermediate[join.table2];
         vector<uint64_t> &table2 = intermediate_upd[join.table1];
-        for (key_tuple *kt = page; kt < page + size; kt++) {
+        for (key_tuple *kt = page; kt < s; kt++) {
           change_intermediate(intermediate, intermediate_upd, kt->keyS, kt->keyR, table1, table2);
         }
     } else {
         const vector<uint64_t> &table1 = intermediate[join.table1];
         vector<uint64_t> &table2 = intermediate_upd[join.table2];
-        for (key_tuple *kt = page; kt < page + size; kt++) {
+        for (key_tuple *kt = page; kt < s; kt++) {
           change_intermediate(intermediate, intermediate_upd, kt->keyR, kt->keyS, table1, table2);
         }
     }
@@ -171,7 +173,8 @@ void getVector2(const vector<vector<uint64_t>> &intermediate, const join_info &j
 void getVector3(const vector<vector<uint64_t>> &intermediate, const join_info &join,
                 vector<vector<uint64_t>> &intermediate_upd, const bucket_info *temp, size_t size) {
     auto page = (key_tuple *) &temp[1];
-    for (key_tuple *kt = page; kt < page + size; kt++) {
+    auto s = page + size;
+    for (key_tuple *kt = page; kt < s; kt++) {
         change_both_intermediate(intermediate, intermediate[join.table1], intermediate[join.table2],
                                  intermediate_upd, kt->keyR, kt->keyS);
     }

@@ -77,32 +77,6 @@ uint64_t column_proj(const vector<relList> &relations, uint64_t table_number, ui
     return sum;
 }
 
-/* Print projections when join has results. */
-void printVAL(const Query &query) {
-    const vector<proj_info> &projections = query.proj;
-    auto it = projections.begin();
-    std::cout << it->sum;
-    it++;
-    while (it != projections.end()) {
-        std::cout << ' ' << it->sum;
-        it++;
-    }
-    std::cout << std::endl;
-}
-
-/* Print projections when a join/filter has returned no results. */
-void printNULL(const Query &query) {
-    const vector<proj_info> &projections = query.proj;
-    auto it = projections.begin();
-    std::cout << "NULL";
-    it++;
-    while (it != projections.end()) {
-        std::cout << ' ' << "NULL";
-        it++;
-    }
-    std::cout << std::endl;
-}
-
 /* If self-join, just parse table.
  * Else, make tuples into relation for join and RadixHashJoin.
  * If join is empty, stop query and sum projections.
@@ -155,13 +129,28 @@ void Query::execute(vector<relList> &relations) {
     }
 }
 
+/* Print projections when join has results. */
+void printVAL(vector<proj_info>::const_iterator &it) {
+    cout << it->sum;
+    it++;
+}
+
+/* Print projections when a join/filter has returned no results. */
+void printNULL(vector<proj_info>::const_iterator &it) {
+    cout << "NULL";
+    it++;
+}
+
 /* Print out projections according to filters */
-void Query::print() {
-    if (filtered_out) {
-        printNULL(*this);
-    } else {
-        printVAL(*this);
+void Query::print() const {
+    auto foo = filtered_out ? printNULL : printVAL;
+    auto it = proj.begin();
+    foo(it);
+    while (it != proj.end()) {
+        cout << ' ';
+        foo(it);
     }
+    cout << endl;
 }
 
 /* Constructors for info structs. */

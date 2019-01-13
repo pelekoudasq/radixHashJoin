@@ -4,26 +4,37 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <cassert>
 #include "structs.h"
 
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
-
 /* Get relations and data from line read from user. */
-relList::relList(char *filename) {
+void relList::init(char *filename) {
     int fd = open(filename, O_RDONLY);
-    if (read(fd, &num_tuples, 2 * sizeof(uint64_t)) != 2 * sizeof(uint64_t)) return;
-//    read(fd, &num_tuples, sizeof(uint64_t));
-//    read(fd, &num_columns, sizeof(uint64_t));
-    value = (uint64_t *) mmap(nullptr, (num_tuples * num_columns + 2) * sizeof(uint64_t), PROT_READ, MAP_PRIVATE, fd, 0);
-    value += 2;            //file offset
+    assert(fd != -1);
+
+    struct stat s{};
+    fstat(fd, &s);
+    auto st_size = (size_t) s.st_size;
+
+    auto mapped = (uint64_t *) mmap(nullptr, st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    assert(mapped != MAP_FAILED);
+
+    num_tuples = mapped[0];
+    num_columns = mapped[1];
+    assert(st_size == (num_tuples * num_columns + 2) * sizeof(uint64_t));
+
+    value = mapped + 2;
     close(fd);
 }
 
-relList::~relList() {
-    munmap(value, (num_tuples * num_columns + 2) * sizeof(uint64_t));
+void relList::destroy() {
+    int rc = munmap(value - 2, (num_tuples * num_columns + 2) * sizeof(uint64_t));
+    assert(rc == 0);
 }
 
 /* First parsing through table
