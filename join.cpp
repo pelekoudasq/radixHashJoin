@@ -7,6 +7,18 @@
 
 using std::vector;
 
+class Job2 : public Job {
+    Query &query;
+    vector<relList> &relations;
+public:
+    Job2(Query &query, vector<relList> &relations) : query(query), relations(relations) {}
+
+    int run() override {
+        query.execute(relations);
+        return 0;
+    }
+};
+
 int main() {
     char *lineptr = nullptr;
     size_t n = 0;
@@ -42,10 +54,16 @@ int main() {
         }
     }
     //for every batch, execute queries
+    JobScheduler js;
     for (auto &&queries : batches) {
+        js.init(1);
         for (auto &&query : queries) {
-            query.execute(relations);
+            js.schedule(new Job2(query, relations));
+//            query.execute(relations);
         }
+        js.barrier();
+        js.stop();
+        js.destroy();
         for (auto &&query : queries) {
             query.print();
         }

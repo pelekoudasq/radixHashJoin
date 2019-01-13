@@ -16,7 +16,7 @@ void *threadWork(void *arg) {
 
 void JobScheduler::threadWork() {
     while (true) {
-        if (pthread_mutex_lock(&queueLock) < 0) {
+        if (pthread_mutex_lock(&queueLock) != 0) {
             cerr << "lock" << endl;
             exit(EXIT_FAILURE);
         }
@@ -26,22 +26,23 @@ void JobScheduler::threadWork() {
         }
 
         if (q.empty()) {
-            if (pthread_mutex_unlock(&queueLock) < 0) {
+            if (pthread_mutex_unlock(&queueLock) != 0) {
                 cerr << "unlock" << endl;
                 exit(EXIT_FAILURE);
             }
             return;
         }
 
-        Job *job = q.back();
+        Job *job = q.front();
         q.pop();
 
-        if (pthread_mutex_unlock(&queueLock) < 0) {
+        if (pthread_mutex_unlock(&queueLock) != 0) {
             cerr << "unlock" << endl;
             exit(EXIT_FAILURE);
         }
 
         job->run();
+        delete job;
     }
 }
 
@@ -67,13 +68,13 @@ void JobScheduler::barrier() {
 }
 
 int JobScheduler::schedule(Job *job) {
-    if (pthread_mutex_lock(&queueLock) < 0) {
+    if (pthread_mutex_lock(&queueLock) != 0) {
         cerr << "lock" << endl;
         exit(EXIT_FAILURE);
     }
     q.push(job);
     pthread_cond_signal(&cond_nonempty);
-    if (pthread_mutex_unlock(&queueLock) < 0) {
+    if (pthread_mutex_unlock(&queueLock) != 0) {
         cerr << "unlock" << endl;
         exit(EXIT_FAILURE);
     }

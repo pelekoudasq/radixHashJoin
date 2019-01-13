@@ -45,7 +45,6 @@ void relList::destroy() {
  * Copy that tuple to the new table in the right position
  * Increase position for current hash result value
  */
-
 void relation_info::hash_relation(relation &rel, size_t twoInLSB) {
     histogram = new size_t[twoInLSB]();
     for (size_t i = 0; i < rel.num_tuples; i++) {
