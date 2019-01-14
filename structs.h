@@ -10,7 +10,7 @@
 struct relList {
     uint64_t num_tuples;
     uint64_t num_columns;
-    uint64_t *value;
+    uint64_t **values;
 
     void init(char *filename);
 
@@ -30,7 +30,7 @@ struct relation {
                          std::unordered_map<uint64_t, std::unordered_set<uint64_t> > &filtered,
                          std::vector<uint64_t> &inter);
 
-    void foo(const relList &rel, size_t offset, const std::unordered_set<uint64_t> &uniqueValues);
+    void foo(const relList &rel, size_t column_number, const std::unordered_set<uint64_t> &uniqueValues);
 
     ~relation();
 };

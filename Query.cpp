@@ -70,9 +70,8 @@ uint64_t column_proj(const vector<relList> &relations, uint64_t table_number, ui
                      const vector<uint64_t> &vec) {
     const relList &rel = relations[table_number];
     uint64_t sum = 0;
-    size_t offset = column_number * rel.num_tuples;
     for (auto &&val : vec) {
-        sum += rel.value[offset + val];
+        sum += rel.values[column_number][val];
     }
     return sum;
 }

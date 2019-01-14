@@ -28,13 +28,19 @@ void relList::init(char *filename) {
     num_columns = mapped[1];
     assert(st_size == (num_tuples * num_columns + 2) * sizeof(uint64_t));
 
-    value = mapped + 2;
+    mapped += 2;
+    values = new uint64_t *[num_columns];
+    for (size_t i = 0; i < num_columns; ++i) {
+        values[i] = mapped;
+        mapped += num_tuples;
+    }
     close(fd);
 }
 
 void relList::destroy() {
-    int rc = munmap(value - 2, (num_tuples * num_columns + 2) * sizeof(uint64_t));
+    int rc = munmap(values[0] - 2, (num_tuples * num_columns + 2) * sizeof(uint64_t));
     assert(rc == 0);
+    delete[] values;
 }
 
 /* First parsing through table
@@ -78,13 +84,13 @@ relation::~relation() {
 /* Return certain column of a relation in the form
  * of table of tuples for using RadixHashJoin
  */
-void relation::foo(const relList &rel, size_t offset, const unordered_set<uint64_t> &uniqueValues) {
+void relation::foo(const relList &rel, size_t column_number, const unordered_set<uint64_t> &uniqueValues) {
     num_tuples = uniqueValues.size();
     tuples = new tuple[num_tuples];
     size_t i = 0;
     for (auto &&rowid : uniqueValues) {
         tuples[i].key = rowid;
-        tuples[i].payload = rel.value[offset + rowid];
+        tuples[i].payload = rel.values[column_number][rowid];
         i++;
     }
 }
@@ -94,15 +100,14 @@ void relation::foo(const relList &rel, size_t offset, const unordered_set<uint64
 void relation::create_relation(uint64_t join_table, relList &rel, uint64_t column_number,
                                unordered_map<uint64_t, unordered_set<uint64_t> > &filtered,
                                vector<uint64_t> &inter) {
-    size_t offset = column_number * rel.num_tuples;
     if (inter.empty()) {
         unordered_map<uint64_t, unordered_set<uint64_t> >::const_iterator table = filtered.find(join_table);
         const unordered_set<uint64_t> &uniqueValues = table->second;
-        foo(rel, offset, uniqueValues);
+        foo(rel, column_number, uniqueValues);
     } else {
         unordered_set<uint64_t> uniqueValues;
         for (auto &&val : inter)
             uniqueValues.insert(val);
-        foo(rel, offset, uniqueValues);
+        foo(rel, column_number, uniqueValues);
     }
 }

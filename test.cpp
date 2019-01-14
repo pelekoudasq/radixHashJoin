@@ -23,9 +23,8 @@ bool run_filters(Query &query, vector<relList> &relations,
     for (auto &&f : filter) {
         uint64_t table_number = query.table[f.table];
         uint64_t column_number = f.column;
-        size_t offset = column_number * relations[table_number].num_tuples;
         for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
-            uint64_t value = relations[table_number].value[offset + j];
+            uint64_t value = relations[table_number].values[column_number][j];
             if (f.op == '>') {
                 if (value <= f.number)
                     filtered[f.table].erase(j);
@@ -55,13 +54,12 @@ void parse_table(join_info &join, relList &relation, unordered_map<uint64_t,
 
     uint64_t column1_number = join.column1;
     uint64_t column2_number = join.column2;
-    size_t offset = relation.num_tuples;
 
     if (intermediate[join.table1].empty()) {
         unordered_map<uint64_t, unordered_set<uint64_t> >::const_iterator table = filtered.find(join.table1);
         for (auto &&rowid : table->second) {
-            uint64_t value1 = relation.value[column1_number * offset + rowid];
-            uint64_t value2 = relation.value[column2_number * offset + rowid];
+            uint64_t value1 = relation.values[column1_number][rowid];
+            uint64_t value2 = relation.values[column2_number][rowid];
             if (value1 == value2) {
                 intermediate[join.table1].push_back(rowid);
             }
@@ -71,8 +69,8 @@ void parse_table(join_info &join, relList &relation, unordered_map<uint64_t,
         auto i = oldTable.end();
         //size_t position = oldTable.size();
         while (i != oldTable.begin()) {
-            uint64_t value1 = relation.value[column1_number * offset + (*i)];
-            uint64_t value2 = relation.value[column2_number * offset + (*i)];
+            uint64_t value1 = relation.values[column1_number][(*i)];
+            uint64_t value2 = relation.values[column2_number][(*i)];
             if (value1 != value2) {
                 //erase joined values from all tables
                 for (auto &k : intermediate) {
