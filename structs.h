@@ -11,8 +11,11 @@ struct relList {
     uint64_t num_tuples;
     uint64_t num_columns;
     uint64_t **values;
+    uint64_t *col_min;
+    uint64_t *col_max;
+    uint64_t *distinct;
 
-    explicit relList(char *filename);
+    relList(char *filename);
 
     void destroy();
 };

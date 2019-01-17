@@ -24,7 +24,11 @@ struct Result {
 
     void RadixHashJoin(relation &, relation &);
 
+    void join_buckets(relation_info *small, relation_info *big, size_t begSmall, size_t begBig, size_t bucketNo,
+                      bool orderFlag);
+
     Result();
+
     ~Result();
 };
 

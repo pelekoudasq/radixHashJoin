@@ -36,8 +36,8 @@ void Result::add_result(uint64_t key1, uint64_t key2) {
  * Add resulting RowIDs to list
  * always put key of array R first and then key of array S
  */
-void join_buckets(Result *list, relation_info *small, relation_info *big, size_t begSmall, size_t begBig,
-                  size_t bucketNo, bool orderFlag) {
+void Result::join_buckets(relation_info *small, relation_info *big, size_t begSmall, size_t begBig, size_t bucketNo,
+        bool orderFlag) {
     size_t hashValue = next_prime(small->histogram[bucketNo]);
 
     auto *bucket = new int64_t[hashValue];
@@ -60,9 +60,9 @@ void join_buckets(Result *list, relation_info *small, relation_info *big, size_t
         while (position != -1) {
             if (big->tups.tuples[i].payload == small->tups.tuples[position + begSmall].payload) {
                 if (orderFlag)
-                    list->add_result(big->tups.tuples[i].key, small->tups.tuples[position + begSmall].key);
+                    add_result(big->tups.tuples[i].key, small->tups.tuples[position + begSmall].key);
                 else
-                    list->add_result(small->tups.tuples[position + begSmall].key, big->tups.tuples[i].key);
+                    add_result(small->tups.tuples[position + begSmall].key, big->tups.tuples[i].key);
             }
             position = chain[position];
         }
@@ -87,9 +87,9 @@ void Result::RadixHashJoin(relation &relR, relation &relS) {
     for (size_t i = 0; i < twoInLSB; i++) {
         if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
             if (relRhashed.histogram[i] >= relShashed.histogram[i])
-                join_buckets(this, &relShashed, &relRhashed, begS, begR, i, true);
+                join_buckets(&relShashed, &relRhashed, begS, begR, i, true);
             else
-                join_buckets(this, &relRhashed, &relShashed, begR, begS, i, false);
+                join_buckets(&relRhashed, &relShashed, begR, begS, i, false);
         }
         begR += relRhashed.histogram[i];
         begS += relShashed.histogram[i];

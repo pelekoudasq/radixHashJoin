@@ -51,15 +51,16 @@ int main() {
     }
     //for every batch, execute queries
     JobScheduler js;
+    js.init(16);
     for (auto &&queries : batches) {
-        js.init(16);
         for (auto &&query : queries) {
             js.schedule(new Job2(query, relations));
-//            query.execute(relations);
         }
-        js.barrier();
-        js.stop();
-        js.destroy();
+    }
+    js.barrier();
+    js.stop();
+    js.destroy();
+    for (auto &&queries : batches) {
         for (auto &&query : queries) {
             query.print();
         }

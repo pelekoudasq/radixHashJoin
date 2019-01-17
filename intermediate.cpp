@@ -28,8 +28,8 @@ void parse_table(join_info &join, relList &relation, unordered_map<uint64_t,
         auto i = oldTable.end();
         //size_t position = oldTable.size();
         while (i != oldTable.begin()) {
-            uint64_t value1 = relation.values[column1_number][(*i)];
-            uint64_t value2 = relation.values[column2_number][(*i)];
+            uint64_t value1 = relation.values[column1_number][*i];
+            uint64_t value2 = relation.values[column2_number][*i];
             if (value1 != value2) {
                 //erase joined values from all tables
                 for (auto &k : intermediate) {
