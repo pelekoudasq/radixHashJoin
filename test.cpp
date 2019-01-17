@@ -19,7 +19,12 @@ bool run_filters(Query &query, vector<relList> &relations,
         for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
             f.insert(j);
         }
+        //calculate join order
+        for (size_t j = i; j < query.table.size(); j++) {
+            /* code */
+        }
     }
+
     for (auto &&f : filter) {
         uint64_t table_number = query.table[f.table];
         uint64_t column_number = f.column;

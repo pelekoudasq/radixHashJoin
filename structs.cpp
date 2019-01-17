@@ -13,7 +13,7 @@ using std::unordered_set;
 using std::vector;
 
 /* Get relations and data from line read from user. */
-void relList::init(char *filename) {
+relList::relList(char *filename) {
     int fd = open(filename, O_RDONLY);
     assert(fd != -1);
 
@@ -30,11 +30,37 @@ void relList::init(char *filename) {
 
     mapped += 2;
     values = new uint64_t *[num_columns];
+    col_max = new uint64_t[num_columns];
+    col_min = new uint64_t[num_columns];
+    distinct = new uint64_t[num_columns];
     for (size_t i = 0; i < num_columns; ++i) {
         values[i] = mapped;
         mapped += num_tuples;
+        uint64_t min = values[i][0];
+        uint64_t max = values[i][0];
+        for (size_t j = 1; j < num_tuples; j++) {
+            if (min > values[i][j]) {
+              min = values[i][j];
+            }
+            else if (max < values[i][j]) {
+                max = values[i][j];
+            }
+        }
+        col_max[i] = max;
+        col_min[i] = min;
+
+        vector<bool> dist(max-min+1, false);
+        for (size_t j = 0; j < num_tuples; j++) {
+            dist[values[i][j]-min] = true;
+        }
+        for (size_t j = 0; j < max-min; j++) {
+            if(dist[j] == true){
+                distinct[i]++;
+            }
+        }
     }
     close(fd);
+
 }
 
 void relList::destroy() {

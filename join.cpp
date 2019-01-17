@@ -29,8 +29,7 @@ int main() {
     while ((lineSize = getline(&lineptr, &n, stdin)) != -1 && strcmp(lineptr, "Done\n") != 0) {
         lineptr[lineSize - 1] = '\0';
         //open file and get contents
-        relations.emplace_back();
-        relations.back().init(lineptr);
+        relations.emplace_back(lineptr);
     }
     if (lineptr != nullptr)
         free(lineptr);
