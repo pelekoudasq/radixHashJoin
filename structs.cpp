@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <cassert>
 #include "structs.h"
+#include "JobScheduler.h"
 
 using std::unordered_map;
 using std::unordered_set;
@@ -40,21 +41,20 @@ relList::relList(char *filename) {
         uint64_t max = values[i][0];
         for (size_t j = 1; j < num_tuples; j++) {
             if (min > values[i][j]) {
-              min = values[i][j];
-            }
-            else if (max < values[i][j]) {
+                min = values[i][j];
+            } else if (max < values[i][j]) {
                 max = values[i][j];
             }
         }
         col_max[i] = max;
         col_min[i] = min;
 
-        vector<bool> dist(max-min+1, false);
+        vector<bool> dist(max - min + 1, false);
         for (size_t j = 0; j < num_tuples; j++) {
-            dist[values[i][j]-min] = true;
+            dist[values[i][j] - min] = true;
         }
-        for (size_t j = 0; j < max-min; j++) {
-            if(dist[j] == true){
+        for (size_t j = 0; j < max - min; j++) {
+            if (dist[j] == true) {
                 distinct[i]++;
             }
         }
@@ -68,6 +68,26 @@ void relList::destroy() {
     delete[] values;
 }
 
+class Job3 : public Job {
+    size_t *histogram;
+    relation &rel;
+    size_t twoInLSB;
+    size_t start;
+    size_t end;
+
+    int run() override {
+        for (size_t i = start; i < end; i++) {
+            size_t position = rel.tuples[i].payload & (twoInLSB - 1);
+            histogram[position]++;
+        }
+        return 0;
+    }
+
+public:
+    Job3(size_t *histogram, relation &rel, size_t twoInLSB, size_t start, size_t end)
+            : histogram(histogram), rel(rel), twoInLSB(twoInLSB), start(start), end(end) {}
+};
+
 /* First parsing through table
  * Find hash position and increase histogram value by one
  * From histogram to summarised histogram
@@ -77,11 +97,39 @@ void relList::destroy() {
  * Increase position for current hash result value
  */
 void relation_info::hash_relation(relation &rel, size_t twoInLSB) {
-    histogram = new size_t[twoInLSB]();
-    for (size_t i = 0; i < rel.num_tuples; i++) {
-        size_t position = rel.tuples[i].payload & (twoInLSB - 1);
-        histogram[position]++;
+    size_t num_of_threads = 8;
+
+    JobScheduler js;
+    js.init(num_of_threads);
+    uint64_t div = rel.num_tuples / num_of_threads;
+    uint64_t mod = rel.num_tuples % num_of_threads;
+    auto hists = new size_t *[num_of_threads];
+
+    size_t start = 0;
+    size_t end = div;
+    for (size_t i = 0; i < num_of_threads; ++i) {
+        hists[i] = new size_t[twoInLSB]();
+        Job *job = new Job3(hists[i], rel, twoInLSB, start, end);
+        js.schedule(job);
+        start = end;
+        end += div;
+        if (mod > 0) {
+            end++;
+            mod--;
+        }
     }
+    js.barrier();
+    js.stop();
+    js.destroy();
+
+    histogram = new size_t[twoInLSB]();
+    for (size_t i = 0; i < num_of_threads; ++i) {
+        for (size_t j = 0; j < twoInLSB; ++j) {
+            histogram[j] += hists[i][j];
+        }
+        delete[] hists[i];
+    }
+    delete[] hists;
 
     auto *sumHistogram = new size_t[twoInLSB];
     sumHistogram[0] = 0;

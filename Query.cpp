@@ -36,7 +36,7 @@ bool Query::read_relations(int ch) {
 /* Reads predicates for query. Stores filters and joins separetely.*/
 void Query::read_predicates() {
     int ch = '\0';
-    while (ch != '|') {                                      //for every predicate
+    while (ch != '|') {                                     //for every predicate
         int op;
         ch = getchar();
         uint64_t table1 = read_number(ch, &op);             //read number(table1), ignore->(.) that follows it
