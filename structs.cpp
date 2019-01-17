@@ -88,17 +88,8 @@ public:
             : histogram(histogram), rel(rel), twoInLSB(twoInLSB), start(start), end(end) {}
 };
 
-/* First parsing through table
- * Find hash position and increase histogram value by one
- * From histogram to summarised histogram
- * Second parsing through table, new relation table
- * Find hash position
- * Copy that tuple to the new table in the right position
- * Increase position for current hash result value
- */
-void relation_info::hash_relation(relation &rel, size_t twoInLSB) {
+size_t *multiHistogram(relation &rel, size_t twoInLSB) {
     size_t num_of_threads = 8;
-
     JobScheduler js;
     js.init(num_of_threads);
     uint64_t div = rel.num_tuples / num_of_threads;
@@ -122,7 +113,7 @@ void relation_info::hash_relation(relation &rel, size_t twoInLSB) {
     js.stop();
     js.destroy();
 
-    histogram = new size_t[twoInLSB]();
+    auto histogram = new size_t[twoInLSB]();
     for (size_t i = 0; i < num_of_threads; ++i) {
         for (size_t j = 0; j < twoInLSB; ++j) {
             histogram[j] += hists[i][j];
@@ -130,6 +121,28 @@ void relation_info::hash_relation(relation &rel, size_t twoInLSB) {
         delete[] hists[i];
     }
     delete[] hists;
+    return histogram;
+}
+
+size_t *singleHistogram(relation &rel, size_t twoInLSB) {
+    auto histogram = new size_t[twoInLSB]();
+    for (size_t i = 0; i < rel.num_tuples; i++) {
+        size_t position = rel.tuples[i].payload & (twoInLSB - 1);
+        histogram[position]++;
+    }
+    return histogram;
+}
+
+/* First parsing through table
+ * Find hash position and increase histogram value by one
+ * From histogram to summarised histogram
+ * Second parsing through table, new relation table
+ * Find hash position
+ * Copy that tuple to the new table in the right position
+ * Increase position for current hash result value
+ */
+void relation_info::hash_relation(relation &rel, size_t twoInLSB) {
+    histogram = multiHistogram(rel, twoInLSB);
 
     auto *sumHistogram = new size_t[twoInLSB];
     sumHistogram[0] = 0;
