@@ -38,16 +38,13 @@ int main() {
     vector<vector<Query>> batches;
     while (!feof(stdin)) {
         vector<Query> queries;
-        while (true) {
-            Query query;
-            if (query.read_relations()) {
-                getchar();                            //get new line
-                break;
-            }
-            query.read_predicates();
-            query.read_projections();
-            queries.push_back(query);
+        int ch = getchar();
+        //check if end of batch or end of file
+        while (ch != 'F' && ch != EOF) {
+            queries.emplace_back(ch);
+            ch = getchar();
         }
+        getchar();                            //get new line
         if (!queries.empty()) {
             batches.push_back(queries);
         }
@@ -55,7 +52,7 @@ int main() {
     //for every batch, execute queries
     JobScheduler js;
     for (auto &&queries : batches) {
-        js.init(1);
+        js.init(16);
         for (auto &&query : queries) {
             js.schedule(new Job2(query, relations));
 //            query.execute(relations);

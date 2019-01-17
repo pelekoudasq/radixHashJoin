@@ -1,55 +1,9 @@
 #include <iostream>
-#include "test.h"
+#include "intermediate.h"
 
 using std::vector;
 using std::unordered_map;
 using std::unordered_set;
-
-/* Run filters first.
- * For all tables in filters, get all rows and then erase
- * all those that do not match the filter.
- * If a filter returned no results, return true, else false.
- */
-bool run_filters(Query &query, vector<relList> &relations,
-                 unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
-    vector<filter_info> &filter = query.filter;
-    for (uint64_t i = 0; i < query.table.size(); i++) {
-        uint64_t table_number = query.table[i];
-        auto &f = filtered[i];
-        for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
-            f.insert(j);
-        }
-        //calculate join order
-        for (size_t j = i; j < query.table.size(); j++) {
-            /* code */
-        }
-    }
-
-    for (auto &&f : filter) {
-        uint64_t table_number = query.table[f.table];
-        uint64_t column_number = f.column;
-        for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
-            uint64_t value = relations[table_number].values[column_number][j];
-            if (f.op == '>') {
-                if (value <= f.number)
-                    filtered[f.table].erase(j);
-            } else if (f.op == '<') {
-                if (value >= f.number)
-                    filtered[f.table].erase(j);
-            } else if (f.op == '=') {
-                if (value != f.number)
-                    filtered[f.table].erase(j);
-            }
-        }
-    }
-
-    for (size_t i = 0; i < query.table.size(); i++) {
-        if (filtered[i].empty()) {
-            return true;
-        }
-    }
-    return false;
-}
 
 /* If the table has not been joined before, just parse original data and add matching rows to intermediate.
  * Else, get data from intermediate and match those, enter matching rows to intermediate.
