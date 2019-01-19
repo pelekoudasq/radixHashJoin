@@ -129,7 +129,7 @@ void Query::run_joins(vector<relList> &relations, unordered_map<uint64_t, unorde
                                  intermediate[j.table2]);
             //send relations to RadxHashJoin
             Result results;
-            results.RadixHashJoin(relR, relS);
+            results.multiRadixHashJoin(relR, relS);
             //if we have no results in this join there are no results
             if (results.isEmpty()) {
                 filtered_out = true;

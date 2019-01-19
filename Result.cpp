@@ -128,12 +128,6 @@ void Result::multiRadixHashJoin(relation &relR, relation &relS) {
         if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
             js.schedule(new JoinJob(res[i], &relShashed, &relRhashed, begS, begR, relShashed.histogram[i],
                                     relRhashed.histogram[i]));
-            if (relRhashed.histogram[i] >= relShashed.histogram[i])
-                join_buckets(&relShashed, &relRhashed, begS, begR, relShashed.histogram[i], relRhashed.histogram[i],
-                             true);
-            else
-                join_buckets(&relRhashed, &relShashed, begR, begS, relRhashed.histogram[i], relShashed.histogram[i],
-                             false);
         }
         begR += relRhashed.histogram[i];
         begS += relShashed.histogram[i];
