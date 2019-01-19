@@ -38,13 +38,21 @@ struct Query {
     std::vector<proj_info> proj;
     bool filtered_out;
 
-    bool read_relations();
+    explicit Query(int ch);
+
+    bool read_relations(int ch);
 
     void read_predicates();
 
     void read_projections();
 
     void execute(std::vector<relList> &relations);
+
+    void run_filters(std::vector<relList> &relations,
+                     std::unordered_map<uint64_t, std::unordered_set<uint64_t> > &filtered);
+
+    void run_joins(std::vector<relList> &relations,
+                   std::unordered_map<uint64_t, std::unordered_set<uint64_t> > &filtered);
 
     void print() const;
 };
