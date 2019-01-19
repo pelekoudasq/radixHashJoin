@@ -20,11 +20,21 @@ struct Result {
     size_t size;                // Size of current bucket_info (all the other bucket_infos and memory behind are full)
     bucket_info *head;          // Current bucket_info
 
+    bool isEmpty();
+
     void add_result(uint64_t, uint64_t);
+
+    void addAll(bucket_info *node, size_t size);
 
     void RadixHashJoin(relation &, relation &);
 
+    void multiRadixHashJoin(relation &relR, relation &relS);
+
+    void join_buckets(relation_info *small, relation_info *big, size_t begSmall, size_t begBig, size_t histSmall,
+                      size_t histBig, bool orderFlag);
+
     Result();
+
     ~Result();
 };
 

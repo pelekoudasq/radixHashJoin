@@ -15,7 +15,7 @@ struct relList {
     uint64_t *col_max;
     uint64_t *distinct;
 
-    relList(char *filename);
+    explicit relList(char *filename);
 
     void destroy();
 };
@@ -39,7 +39,7 @@ struct relation {
 };
 
 struct relation_info {
-    relation tups;
+    relation tuples;
     size_t *histogram;
 
     void hash_relation(relation &rel, size_t twoInLSB);

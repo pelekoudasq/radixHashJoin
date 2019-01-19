@@ -3,6 +3,8 @@
 
 #include <pthread.h>
 #include <queue>
+#include "structs.h"
+#include "Result.h"
 
 /**
  * Abstract Class Job
@@ -19,9 +21,49 @@ public:
     virtual int run() = 0;
 };
 
-class Job1 : public Job {
+class HistogramJob : public Job {
+    size_t *histogram;
+    relation &rel;
+    size_t twoInLSB;
+    size_t start;
+    size_t end;
+
+    int run() override;
+
 public:
-   int run() override;
+    HistogramJob(size_t *histogram, relation &rel, size_t twoInLSB, size_t start, size_t end);
+};
+
+class PartitionJob : public Job {
+    size_t *tuples;
+    relation &rel;
+    size_t twoInLSB;
+    size_t start;
+    size_t end;
+    size_t *sumHistogram;
+    size_t *histogram;
+
+    int run() override;
+
+public:
+    PartitionJob(size_t *tuples, relation &rel, size_t twoInLSB, size_t start, size_t end, size_t *sumHistogram,
+                 size_t *histogram);
+};
+
+class JoinJob : public Job {
+    Result &result;
+    relation_info *relShashed;
+    relation_info *relRhashed;
+    size_t begS;
+    size_t begR;
+    size_t histS;
+    size_t histR;
+
+    int run() override;
+
+public:
+    JoinJob(Result &result, relation_info *relShashed, relation_info *relRhashed, size_t begS, size_t begR,
+            size_t histS, size_t histR);
 };
 
 /**
@@ -30,10 +72,10 @@ public:
 class JobScheduler {
     bool done;
     size_t num_of_threads;
-    pthread_t* threads;
+    pthread_t *threads;
     pthread_mutex_t queueLock;
     pthread_cond_t cond_nonempty;
-    std::queue<Job*> q;
+    std::queue<Job *> q;
 public:
     void threadWork();
 

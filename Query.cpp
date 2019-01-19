@@ -1,5 +1,5 @@
 #include "Query.h"
-#include "test.h"
+#include "intermediate.h"
 #include <iostream>
 
 using namespace std;
@@ -20,11 +20,7 @@ uint64_t read_number(int ch, int *delim) {
  * Also, checks for end of input and returns accordingly.
  * Returns true on batch end.
  */
-bool Query::read_relations() {
-    int ch = getchar();
-    //check if end of batch or end of file
-    if (ch == 'F' || ch == EOF) return true;
-
+bool Query::read_relations(int ch) {
     //push_table
     table.push_back(read_number(ch, &ch));
 
@@ -40,13 +36,13 @@ bool Query::read_relations() {
 /* Reads predicates for query. Stores filters and joins separetely.*/
 void Query::read_predicates() {
     int ch = '\0';
-    while (ch != '|') {                                        //for every predicate
+    while (ch != '|') {                                     //for every predicate
         int op;
         ch = getchar();
-        uint64_t table1 = read_number(ch, &op);            //read number(table1), ignore->(.) that follows it
-        uint64_t column1 = read_number(getchar(), &op);        //read number(column1), save operation that follows it
-        uint64_t unknown = read_number(getchar(), &ch);        //read next number after operation, save delimiter
-        if (ch == '.') {                                        //if delimiter is (.) we have join
+        uint64_t table1 = read_number(ch, &op);             //read number(table1), ignore->(.) that follows it
+        uint64_t column1 = read_number(getchar(), &op);     //read number(column1), save operation that follows it
+        uint64_t unknown = read_number(getchar(), &ch);     //read next number after operation, save delimiter
+        if (ch == '.') {                                    //if delimiter is (.) we have join
             uint64_t column2 = read_number(getchar(), &ch); //read number(column2), save what follows( & or | )
             join.emplace_back(table1, column1, unknown, column2);
         } else {
@@ -76,56 +72,91 @@ uint64_t column_proj(const vector<relList> &relations, uint64_t table_number, ui
     return sum;
 }
 
+/* Run filters first.
+ * For all tables in filters, get all rows and then erase
+ * all those that do not match the filter.
+ * If a filter returned no results, return true, else false.
+ */
+void Query::run_filters(vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
+    for (uint64_t i = 0; i < table.size(); i++) {
+        uint64_t table_number = table[i];
+        auto &f = filtered[i];
+        for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
+            f.insert(j);
+        }
+    }
+    for (auto &&f : filter) {
+        uint64_t table_number = table[f.table];
+        uint64_t column_number = f.column;
+        for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
+            uint64_t value = relations[table_number].values[column_number][j];
+            if (f.op == '>') {
+                if (value <= f.number)
+                    filtered[f.table].erase(j);
+            } else if (f.op == '<') {
+                if (value >= f.number)
+                    filtered[f.table].erase(j);
+            } else if (f.op == '=') {
+                if (value != f.number)
+                    filtered[f.table].erase(j);
+            }
+        }
+    }
+}
+
 /* If self-join, just parse table.
  * Else, make tuples into relation for join and RadixHashJoin.
  * If join is empty, stop query and sum projections.
  */
-void run_joins(Query &query, vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
-    vector<join_info> &joins = query.join;
-    vector<vector<uint64_t> > intermediate(query.table.size());
-    for (auto &&join : joins) {
-        if (join.table1 == join.table2) {
-            uint64_t table_number = query.table[join.table1];
-            parse_table(join, relations[table_number], filtered, intermediate);
+void Query::run_joins(vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
+    vector<vector<uint64_t> > intermediate(table.size());
+    for (auto &&j : join) {
+        if (j.table1 == j.table2) {
+            uint64_t table_number = table[j.table1];
+            parse_table(j, relations[table_number], filtered, intermediate);
         } else {
-            uint64_t table1_number = query.table[join.table1];
-            uint64_t column1_number = join.column1;
-            uint64_t table2_number = query.table[join.table2];
-            uint64_t column2_number = join.column2;
+            uint64_t table1_number = table[j.table1];
+            uint64_t column1_number = j.column1;
+            uint64_t table2_number = table[j.table2];
+            uint64_t column2_number = j.column2;
             //get rowids for these tables from intermediate or filtered
             //create relations to send to RadixHashJoin
             relation relR;
             relation relS;
-            relR.create_relation(join.table1, relations[table1_number], column1_number, filtered,
-                                 intermediate[join.table1]);
-            relS.create_relation(join.table2, relations[table2_number], column2_number, filtered,
-                                 intermediate[join.table2]);
+            relR.create_relation(j.table1, relations[table1_number], column1_number, filtered,
+                                 intermediate[j.table1]);
+            relS.create_relation(j.table2, relations[table2_number], column2_number, filtered,
+                                 intermediate[j.table2]);
             //send relations to RadxHashJoin
             Result results;
             results.RadixHashJoin(relR, relS);
-            //if we have no results in this join, then empty the intermediate, no results
-            if (results.head == nullptr) {
-                break;              // should we just do print null here? maybe? no?
-                // or just filtered_out = true and before column_proj also check for that
+            //if we have no results in this join there are no results
+            if (results.isEmpty()) {
+                filtered_out = true;
+                break;
             }
             //get results to intermediate
-            update_intermediate(intermediate, results, join);
-            //free process' structures
+            update_intermediate(intermediate, results, j);
         }
     }
 
-    for (auto &p : query.proj) {
-        p.sum = column_proj(relations, query.table[p.table], p.column, intermediate[p.table]);
+    for (auto &p : proj) {
+        p.sum = column_proj(relations, table[p.table], p.column, intermediate[p.table]);
     }
 }
 
 /* Run filters, then joins */
 void Query::execute(vector<relList> &relations) {
     unordered_map<uint64_t, unordered_set<uint64_t> > filtered;
-    filtered_out = run_filters(*this, relations, filtered);
-    if (!filtered_out) {
-        run_joins(*this, relations, filtered);
+    run_filters(relations, filtered);
+    filtered_out = false;
+    for (size_t i = 0; i < table.size(); i++) {
+        if (filtered[i].empty()) {
+            filtered_out = true;
+            return;
+        }
     }
+    run_joins(relations, filtered);
 }
 
 /* Print projections when join has results. */
@@ -142,14 +173,20 @@ void printNULL(vector<proj_info>::const_iterator &it) {
 
 /* Print out projections according to filters */
 void Query::print() const {
-    auto foo = filtered_out ? printNULL : printVAL;
+    auto print = filtered_out ? printNULL : printVAL;
     auto it = proj.begin();
-    foo(it);
+    print(it);
     while (it != proj.end()) {
         cout << ' ';
-        foo(it);
+        print(it);
     }
     cout << endl;
+}
+
+Query::Query(int ch) {
+    read_relations(ch);
+    read_predicates();
+    read_projections();
 }
 
 /* Constructors for info structs. */

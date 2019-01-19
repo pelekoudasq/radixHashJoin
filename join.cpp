@@ -7,11 +7,11 @@
 
 using std::vector;
 
-class Job2 : public Job {
+class QueryJob : public Job {
     Query &query;
     vector<relList> &relations;
 public:
-    Job2(Query &query, vector<relList> &relations) : query(query), relations(relations) {}
+    QueryJob(Query &query, vector<relList> &relations) : query(query), relations(relations) {}
 
     int run() override {
         query.execute(relations);
@@ -38,31 +38,29 @@ int main() {
     vector<vector<Query>> batches;
     while (!feof(stdin)) {
         vector<Query> queries;
-        while (true) {
-            Query query;
-            if (query.read_relations()) {
-                getchar();                            //get new line
-                break;
-            }
-            query.read_predicates();
-            query.read_projections();
-            queries.push_back(query);
+        int ch = getchar();
+        //check if end of batch or end of file
+        while (ch != 'F' && ch != EOF) {
+            queries.emplace_back(ch);
+            ch = getchar();
         }
+        getchar();                            //get new line
         if (!queries.empty()) {
             batches.push_back(queries);
         }
     }
     //for every batch, execute queries
     JobScheduler js;
+    js.init(16);
     for (auto &&queries : batches) {
-        js.init(1);
         for (auto &&query : queries) {
-            js.schedule(new Job2(query, relations));
-//            query.execute(relations);
+            js.schedule(new QueryJob(query, relations));
         }
-        js.barrier();
-        js.stop();
-        js.destroy();
+    }
+    js.barrier();
+    js.stop();
+    js.destroy();
+    for (auto &&queries : batches) {
         for (auto &&query : queries) {
             query.print();
         }
