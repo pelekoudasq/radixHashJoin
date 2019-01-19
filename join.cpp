@@ -51,7 +51,7 @@ int main() {
     }
     //for every batch, execute queries
     JobScheduler js;
-    js.init(16);
+    js.init(NUM_OF_THREADS);
     for (auto &&queries : batches) {
         for (auto &&query : queries) {
             js.schedule(new QueryJob(query, relations));

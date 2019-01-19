@@ -18,35 +18,45 @@ void JobScheduler::threadWork() {
             exit(EXIT_FAILURE);
         }
 
-        while (q.empty() && !done) {
+        while (q.empty() && !done && !bar) {
             pthread_cond_wait(&cond_nonempty, &queueLock);
         }
 
+        Job *job;
         if (q.empty()) {
-            if (pthread_mutex_unlock(&queueLock) != 0) {
-                cerr << "unlock" << endl;
-                exit(EXIT_FAILURE);
-            }
-            return;
+            job = nullptr;
+        } else {
+            job = q.front();
+            q.pop();
         }
-
-        Job *job = q.front();
-        q.pop();
 
         if (pthread_mutex_unlock(&queueLock) != 0) {
             cerr << "unlock" << endl;
             exit(EXIT_FAILURE);
         }
 
-        job->run();
-        delete job;
+        if (job != nullptr) {
+            job->run();
+            delete job;
+        } else {
+            if (done)
+                return;
+            else {
+                pthread_barrier_wait(&pbar);
+                bar = false;
+            }
+        }
     }
 }
 
 bool JobScheduler::init(size_t num_of_threads) {
+    bar = false;
     done = false;
-    queueLock = PTHREAD_MUTEX_INITIALIZER;
-    cond_nonempty = PTHREAD_COND_INITIALIZER;
+
+    pthread_mutex_init(&queueLock, nullptr);
+    pthread_cond_init(&cond_nonempty, nullptr);
+    pthread_barrier_init(&pbar, nullptr, (unsigned) num_of_threads + 1);
+
     this->num_of_threads = num_of_threads;
     threads = new pthread_t[num_of_threads];
     for (size_t i = 0; i < num_of_threads; i++) {
@@ -56,12 +66,19 @@ bool JobScheduler::init(size_t num_of_threads) {
 }
 
 bool JobScheduler::destroy() {
+    pthread_mutex_destroy(&queueLock);
+    pthread_cond_destroy(&cond_nonempty);
+    pthread_barrier_destroy(&pbar);
+
     delete[] threads;
     return true;
 }
 
 void JobScheduler::barrier() {
-
+    bar = true;
+    pthread_cond_broadcast(&cond_nonempty);
+    pthread_barrier_wait(&pbar);
+    bar = false;
 }
 
 int JobScheduler::schedule(Job *job) {
@@ -79,7 +96,6 @@ int JobScheduler::schedule(Job *job) {
 }
 
 void JobScheduler::stop() {
-    barrier();
     done = true;
     pthread_cond_broadcast(&cond_nonempty);
     for (size_t i = 0; i < num_of_threads; i++) {

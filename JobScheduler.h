@@ -6,6 +6,8 @@
 #include "structs.h"
 #include "Result.h"
 
+#define NUM_OF_THREADS 8
+
 /**
  * Abstract Class Job
  */
@@ -70,13 +72,17 @@ public:
  * Class JobScheduler
  */
 class JobScheduler {
+    bool bar;
     bool done;
     size_t num_of_threads;
     pthread_t *threads;
     pthread_mutex_t queueLock;
     pthread_cond_t cond_nonempty;
+    pthread_barrier_t pbar;
     std::queue<Job *> q;
+
 public:
+
     void threadWork();
 
     JobScheduler() = default;
@@ -96,7 +102,7 @@ public:
     bool destroy();
 
 /**
- * Waits Until executed all jobs in the queue.
+ * Waits until executed all jobs in the queue.
  */
     void barrier();
 

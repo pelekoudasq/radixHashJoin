@@ -13,8 +13,6 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
-#define NUM_OF_THREADS 8
-
 /* Get relations and data from line read from user. */
 relList::relList(char *filename) {
     int fd = open(filename, O_RDONLY);

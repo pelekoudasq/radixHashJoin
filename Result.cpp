@@ -121,7 +121,7 @@ void Result::multiRadixHashJoin(relation &relR, relation &relS) {
 
     auto res = new Result[twoInLSB];
     JobScheduler js;
-    js.init(16);
+    js.init(NUM_OF_THREADS);
 
     size_t begR = 0, begS = 0;
     for (size_t i = 0; i < twoInLSB; i++) {
