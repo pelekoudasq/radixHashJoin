@@ -7,9 +7,9 @@ using std::cerr;
 using std::endl;
 
 /* Start routine */
-void *threadWork(void *arg) {
+void *jobThreadWork(void *arg) {
     auto js = (JobScheduler *) arg;
-    js->threadWork();
+    js->threadWork(nullptr);
     return nullptr;
 }
 
@@ -19,7 +19,7 @@ void *threadWork(void *arg) {
  * 2) Barrier is called (bar)
  * 3) Work is done
  */
-void JobScheduler::threadWork() {
+void JobScheduler::threadWork(void *arg) {
     while (true) {
         if (pthread_mutex_lock(&queueLock) != 0) {
             cerr << "lock" << endl;
@@ -48,6 +48,7 @@ void JobScheduler::threadWork() {
         }
 
         if (job != nullptr) {
+            job->init(arg);
             job->run();
             delete job;
         } else {
@@ -57,13 +58,13 @@ void JobScheduler::threadWork() {
         if (bar) {
             // wait until all have reached this point and bar is false again
             pthread_barrier_wait(&pbar);
-            pthread_barrier_wait(&pbar2);
+            pthread_barrier_wait(&pbar);
         }
     }
 }
 
 /* Initialize JobScheduler info */
-bool JobScheduler::init(size_t num_of_threads) {
+bool JobScheduler::init(size_t num_of_threads, void *threadWork(void *)) {
     bar = false;
     done = false;
 
@@ -71,14 +72,17 @@ bool JobScheduler::init(size_t num_of_threads) {
     pthread_cond_init(&cond_nonempty, nullptr);
     pthread_cond_init(&cond_empty, nullptr);
     pthread_barrier_init(&pbar, nullptr, (unsigned) num_of_threads + 1);
-    pthread_barrier_init(&pbar2, nullptr, (unsigned) num_of_threads + 1);
 
     this->num_of_threads = num_of_threads;
     threads = new pthread_t[num_of_threads];
     for (size_t i = 0; i < num_of_threads; i++) {
-        pthread_create(threads + i, nullptr, ::threadWork, this);
+        pthread_create(threads + i, nullptr, threadWork, this);
     }
     return true;
+}
+
+bool JobScheduler::init(size_t num_of_threads) {
+    return init(num_of_threads, jobThreadWork);
 }
 
 /* Destroy JobScheduler info */
@@ -87,7 +91,6 @@ bool JobScheduler::destroy() {
     pthread_cond_destroy(&cond_nonempty);
     pthread_cond_destroy(&cond_empty);
     pthread_barrier_destroy(&pbar);
-    pthread_barrier_destroy(&pbar2);
 
     delete[] threads;
     return true;
@@ -115,7 +118,7 @@ void JobScheduler::barrier() {
     pthread_cond_broadcast(&cond_nonempty);
     pthread_barrier_wait(&pbar);
     bar = false;
-    pthread_barrier_wait(&pbar2);     // so threadWork doesnt get stuck in wait
+    pthread_barrier_wait(&pbar);     // so threadWork doesnt get stuck in wait
 }
 
 /* Appoint job in JobScheduler's queue*/
@@ -192,3 +195,5 @@ int JoinJob::run() {
 JoinJob::JoinJob(Result &result, relation_info *relShashed, relation_info *relRhashed, size_t begS, size_t begR,
                  size_t histS, size_t histR) : result(result), relShashed(relShashed), relRhashed(relRhashed),
                                                begS(begS), begR(begR), histS(histS), histR(histR) {}
+
+void Job::init(void *arg) {}

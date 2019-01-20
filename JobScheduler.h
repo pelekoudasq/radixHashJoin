@@ -19,6 +19,8 @@ public:
 
     virtual ~Job() = default;
 
+    virtual void init(void *arg);
+
 /**
  * This method should be implemented by subclasses.
  */
@@ -82,12 +84,10 @@ class JobScheduler {
     pthread_cond_t cond_nonempty;
     pthread_cond_t cond_empty;
     pthread_barrier_t pbar;
-    pthread_barrier_t pbar2;
     std::queue<Job *> q;
-
 public:
 
-    void threadWork();
+    void threadWork(void *arg);
 
     JobScheduler() = default;
 
@@ -97,7 +97,9 @@ public:
  * Initializes the JobScheduler with the number of open threads.
  * Returns true if everything done right false else.
  */
-    bool init(size_t num_of_threads);
+    bool init(size_t num_of_threads, void *threadWork(void *));
+
+    virtual bool init(size_t num_of_threads);
 
 /**
  * Free all resources that the are allocated by JobScheduler

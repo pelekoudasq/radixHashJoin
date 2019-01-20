@@ -4,31 +4,9 @@
 #include <unistd.h>
 #include "structs.h"
 #include "Query.h"
+#include "MainScheduler.h"
 
 using std::vector;
-
-
-/* Job for executing queries */
-class QueryJob : public Job {
-    Query &query;
-    vector<relList> &relations;
-
-    JobScheduler js;
-public:
-    QueryJob(Query &query, vector<relList> &relations) : query(query), relations(relations) {
-        js.init(NUM_OF_THREADS);
-    }
-
-    ~QueryJob() override {
-        js.stop();
-        js.destroy();
-    }
-
-    int run() override {
-        query.execute(js, relations);
-        return 0;
-    }
-};
 
 int main() {
     char *lineptr = nullptr;
@@ -61,14 +39,13 @@ int main() {
         }
     }
     //for every batch, execute queries
-    JobScheduler js;
+    MainScheduler js;
     js.init(NUM_OF_THREADS);
     for (auto &&queries : batches) {
         for (auto &&query : queries) {
             js.schedule(new QueryJob(query, relations));
         }
     }
-    js.barrier();
     js.stop();
     js.destroy();
     for (auto &&queries : batches) {
