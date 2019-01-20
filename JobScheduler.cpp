@@ -6,12 +6,19 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+/* Start routine */
 void *threadWork(void *arg) {
     auto js = (JobScheduler *) arg;
     js->threadWork();
     return nullptr;
 }
 
+/*
+ * Getting job from queue and running it until:
+ * 1) Queue is empty
+ * 2) Barrier is called (bar)
+ * 3) Work is done
+ */
 void JobScheduler::threadWork() {
     while (true) {
         if (pthread_mutex_lock(&queueLock) != 0) {
@@ -31,6 +38,7 @@ void JobScheduler::threadWork() {
             q.pop();
         }
         if (q.empty()) {
+            // if queue has emptied, signal barrier
             pthread_cond_signal(&cond_empty);
         }
 
@@ -42,21 +50,19 @@ void JobScheduler::threadWork() {
         if (job != nullptr) {
             job->run();
             delete job;
-            if (bar) {
-                pthread_barrier_wait(&pbar);
-                pthread_barrier_wait(&pbar2);
-            }
         } else {
             if (done)
                 return;
-            else {
-                pthread_barrier_wait(&pbar);
-                pthread_barrier_wait(&pbar2);
-            }
+        }
+        if (bar) {
+            // wait until all have reached this point and bar is false again
+            pthread_barrier_wait(&pbar);
+            pthread_barrier_wait(&pbar2);
         }
     }
 }
 
+/* Initialize JobScheduler info */
 bool JobScheduler::init(size_t num_of_threads) {
     bar = false;
     done = false;
@@ -75,6 +81,7 @@ bool JobScheduler::init(size_t num_of_threads) {
     return true;
 }
 
+/* Destroy JobScheduler info */
 bool JobScheduler::destroy() {
     pthread_mutex_destroy(&queueLock);
     pthread_cond_destroy(&cond_nonempty);
@@ -86,6 +93,10 @@ bool JobScheduler::destroy() {
     return true;
 }
 
+/* If barrier is called, wait until queue is empty and enable barrier.
+ * Wake threads to finish any remaining jobs.
+ * Wait until all jobs are done, then disable barrier.
+ */
 void JobScheduler::barrier() {
     if (pthread_mutex_lock(&queueLock) != 0) {
         cerr << "lock" << endl;
@@ -104,9 +115,10 @@ void JobScheduler::barrier() {
     pthread_cond_broadcast(&cond_nonempty);
     pthread_barrier_wait(&pbar);
     bar = false;
-    pthread_barrier_wait(&pbar2);
+    pthread_barrier_wait(&pbar2);     // so threadWork doesnt get stuck in wait
 }
 
+/* Appoint job in JobScheduler's queue*/
 int JobScheduler::schedule(Job *job) {
     if (pthread_mutex_lock(&queueLock) != 0) {
         cerr << "lock" << endl;
@@ -121,6 +133,7 @@ int JobScheduler::schedule(Job *job) {
     return 0;
 }
 
+/* Enable done and wait until all threads finish their jobs */
 void JobScheduler::stop() {
     done = true;
     pthread_cond_broadcast(&cond_nonempty);
@@ -129,6 +142,7 @@ void JobScheduler::stop() {
     }
 }
 
+/* Job to calculate small histograms*/
 int HistogramJob::run() {
     for (size_t i = start; i < end; i++) {
         size_t position = rel.tuples[i].payload & (twoInLSB - 1);
@@ -137,9 +151,11 @@ int HistogramJob::run() {
     return 0;
 }
 
+/* Initialize values */
 HistogramJob::HistogramJob(size_t *histogram, relation &rel, size_t twoInLSB, size_t start, size_t end)
         : histogram(histogram), rel(rel), twoInLSB(twoInLSB), start(start), end(end) {}
 
+/* Job to calculate small sumHistograms and r' by indexes*/
 int PartitionJob::run() {
     sumHistogram[0] = 0;
     auto sumHistogramB = new size_t[twoInLSB];
@@ -157,11 +173,13 @@ int PartitionJob::run() {
     return 0;
 }
 
+/* Initialize values */
 PartitionJob::PartitionJob(size_t *tuples, relation &rel, size_t twoInLSB, size_t start, size_t end,
                            size_t *sumHistogram, size_t *histogram)
         : tuples(tuples), rel(rel), twoInLSB(twoInLSB), start(start), end(end), sumHistogram(sumHistogram),
           histogram(histogram) {}
 
+/* Job to join relation by buckets */
 int JoinJob::run() {
     if (histR >= histS)
         result.join_buckets(relShashed, relRhashed, begS, begR, histS, histR, true);
@@ -170,6 +188,7 @@ int JoinJob::run() {
     return 0;
 }
 
+/* Initialize values */
 JoinJob::JoinJob(Result &result, relation_info *relShashed, relation_info *relRhashed, size_t begS, size_t begR,
                  size_t histS, size_t histR) : result(result), relShashed(relShashed), relRhashed(relRhashed),
                                                begS(begS), begR(begR), histS(histS), histR(histR) {}

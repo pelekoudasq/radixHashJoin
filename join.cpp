@@ -7,6 +7,8 @@
 
 using std::vector;
 
+
+/* Job for executing queries */
 class QueryJob : public Job {
     Query &query;
     vector<relList> &relations;
@@ -27,37 +29,6 @@ public:
         return 0;
     }
 };
-
-class SimpleJob : public Job {
-    int i;
-
-    int run() override {
-        printf("Hello %d\n", i);
-        usleep(rand() % 2000000);
-        return 0;
-    }
-
-public:
-    explicit SimpleJob(int i) {
-        this->i = i;
-    }
-};
-
-int main1() {
-    JobScheduler js;
-    js.init(NUM_OF_THREADS);
-    for (int j = 0; j < 4; ++j) {
-        for (int i = 0; i < 10; ++i) {
-            js.schedule(new SimpleJob(i));
-        }
-        js.barrier();
-        printf("MAIN\n");
-    }
-
-    js.stop();
-    js.destroy();
-    return 0;
-}
 
 int main() {
     char *lineptr = nullptr;
