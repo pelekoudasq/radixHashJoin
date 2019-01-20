@@ -3,8 +3,10 @@
 
 #include <pthread.h>
 #include <queue>
-#include "structs.h"
-#include "Result.h"
+
+struct relation;
+struct relation_info;
+struct Result;
 
 #define NUM_OF_THREADS 8
 
@@ -78,7 +80,9 @@ class JobScheduler {
     pthread_t *threads;
     pthread_mutex_t queueLock;
     pthread_cond_t cond_nonempty;
+    pthread_cond_t cond_empty;
     pthread_barrier_t pbar;
+    pthread_barrier_t pbar2;
     std::queue<Job *> q;
 
 public:

@@ -96,37 +96,27 @@ tuple *singlePartition(relation &rel, size_t twoInLSB, const size_t *histogram) 
     return tups;
 }
 
-size_t **multiHistogram(relation &rel, size_t twoInLSB, size_t *start, size_t *end) {
-    JobScheduler js;
-    js.init(NUM_OF_THREADS);
+size_t **multiHistogram(JobScheduler &js, relation &rel, size_t twoInLSB, size_t *start, size_t *end) {
     auto hists = new size_t *[NUM_OF_THREADS];
 
     for (size_t i = 0; i < NUM_OF_THREADS; ++i) {
         hists[i] = new size_t[twoInLSB]();
-        Job *job = new HistogramJob(hists[i], rel, twoInLSB, start[i], end[i]);
-        js.schedule(job);
+        js.schedule(new HistogramJob(hists[i], rel, twoInLSB, start[i], end[i]));
     }
     js.barrier();
-    js.stop();
-    js.destroy();
 
     return hists;
 }
 
-size_t **multiPartition(relation &rel, size_t twoInLSB, size_t **sumHists, size_t **hists, size_t *start, size_t *end) {
-    JobScheduler js;
-    js.init(NUM_OF_THREADS);
+size_t **multiPartition(JobScheduler &js, relation &rel, size_t twoInLSB, size_t **sumHists, size_t **hists, size_t *start, size_t *end) {
     auto tups = new size_t *[NUM_OF_THREADS];
 
     for (size_t i = 0; i < NUM_OF_THREADS; ++i) {
         sumHists[i] = new size_t[twoInLSB]();
         tups[i] = new size_t[end[i] - start[i]];
-        Job *job = new PartitionJob(tups[i], rel, twoInLSB, start[i], end[i], sumHists[i], hists[i]);
-        js.schedule(job);
+        js.schedule(new PartitionJob(tups[i], rel, twoInLSB, start[i], end[i], sumHists[i], hists[i]));
     }
     js.barrier();
-    js.stop();
-    js.destroy();
 
     return tups;
 }
@@ -139,7 +129,7 @@ size_t **multiPartition(relation &rel, size_t twoInLSB, size_t **sumHists, size_
  * Copy that tuple to the new table in the right position
  * Increase position for current hash result value
  */
-void relation_info::hash_relation(relation &rel, size_t twoInLSB) {
+void relation_info::hash_relation(JobScheduler &js, relation &rel, size_t twoInLSB) {
     // partition R table to NUM_OF_THREADS tables (r)
     size_t start[NUM_OF_THREADS];
     size_t end[NUM_OF_THREADS];
@@ -160,7 +150,7 @@ void relation_info::hash_relation(relation &rel, size_t twoInLSB) {
 
     // histograms of r tables
 //    clock_t x = clock();
-    auto hists = multiHistogram(rel, twoInLSB, start, end);
+    auto hists = multiHistogram(js, rel, twoInLSB, start, end);
 
     // total histogram for RadixHashJoin
     histogram = new size_t[twoInLSB]();
@@ -175,7 +165,7 @@ void relation_info::hash_relation(relation &rel, size_t twoInLSB) {
     auto sumHists = new size_t *[NUM_OF_THREADS];
 
     // r' tables of R indexes
-    auto tups = multiPartition(rel, twoInLSB, sumHists, hists, start, end);
+    auto tups = multiPartition(js, rel, twoInLSB, sumHists, hists, start, end);
 
     // R' table
     tuples.num_tuples = rel.num_tuples;

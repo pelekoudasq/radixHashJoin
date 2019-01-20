@@ -1,23 +1,63 @@
 #include <vector>
 #include <cstdlib>
 #include <cstdio>
+#include <unistd.h>
 #include "structs.h"
 #include "Query.h"
-#include "JobScheduler.h"
 
 using std::vector;
 
 class QueryJob : public Job {
     Query &query;
     vector<relList> &relations;
+
+    JobScheduler js;
 public:
-    QueryJob(Query &query, vector<relList> &relations) : query(query), relations(relations) {}
+    QueryJob(Query &query, vector<relList> &relations) : query(query), relations(relations) {
+        js.init(NUM_OF_THREADS);
+    }
+
+    ~QueryJob() override {
+        js.stop();
+        js.destroy();
+    }
 
     int run() override {
-        query.execute(relations);
+        query.execute(js, relations);
         return 0;
     }
 };
+
+class SimpleJob : public Job {
+    int i;
+
+    int run() override {
+        printf("Hello %d\n", i);
+        usleep(rand() % 2000000);
+        return 0;
+    }
+
+public:
+    explicit SimpleJob(int i) {
+        this->i = i;
+    }
+};
+
+int main1() {
+    JobScheduler js;
+    js.init(NUM_OF_THREADS);
+    for (int j = 0; j < 4; ++j) {
+        for (int i = 0; i < 10; ++i) {
+            js.schedule(new SimpleJob(i));
+        }
+        js.barrier();
+        printf("MAIN\n");
+    }
+
+    js.stop();
+    js.destroy();
+    return 0;
+}
 
 int main() {
     char *lineptr = nullptr;

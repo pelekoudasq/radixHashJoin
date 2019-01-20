@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "JobScheduler.h"
 
 struct relList {
     uint64_t num_tuples;
@@ -42,7 +43,7 @@ struct relation_info {
     relation tuples;
     size_t *histogram;
 
-    void hash_relation(relation &rel, size_t twoInLSB);
+    void hash_relation(JobScheduler &js, relation &rel, size_t twoInLSB);
 
     ~relation_info();
 };

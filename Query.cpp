@@ -108,7 +108,7 @@ void Query::run_filters(vector<relList> &relations, unordered_map<uint64_t, unor
  * Else, make tuples into relation for join and RadixHashJoin.
  * If join is empty, stop query and sum projections.
  */
-void Query::run_joins(vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
+void Query::run_joins(JobScheduler &js, vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
     vector<vector<uint64_t> > intermediate(table.size());
     for (auto &&j : join) {
         if (j.table1 == j.table2) {
@@ -129,7 +129,7 @@ void Query::run_joins(vector<relList> &relations, unordered_map<uint64_t, unorde
                                  intermediate[j.table2]);
             //send relations to RadxHashJoin
             Result results;
-            results.multiRadixHashJoin(relR, relS);
+            results.multiRadixHashJoin(js, relR, relS);
             //if we have no results in this join there are no results
             if (results.isEmpty()) {
                 filtered_out = true;
@@ -139,6 +139,7 @@ void Query::run_joins(vector<relList> &relations, unordered_map<uint64_t, unorde
             update_intermediate(intermediate, results, j);
         }
     }
+    js.barrier();
 
     for (auto &p : proj) {
         p.sum = column_proj(relations, table[p.table], p.column, intermediate[p.table]);
@@ -146,7 +147,7 @@ void Query::run_joins(vector<relList> &relations, unordered_map<uint64_t, unorde
 }
 
 /* Run filters, then joins */
-void Query::execute(vector<relList> &relations) {
+void Query::execute(JobScheduler &js, vector<relList> &relations) {
     unordered_map<uint64_t, unordered_set<uint64_t> > filtered;
     run_filters(relations, filtered);
     filtered_out = false;
@@ -156,7 +157,7 @@ void Query::execute(vector<relList> &relations) {
             return;
         }
     }
-    run_joins(relations, filtered);
+    run_joins(js, relations, filtered);
 }
 
 /* Print projections when join has results. */

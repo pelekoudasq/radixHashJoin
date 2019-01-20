@@ -1,4 +1,5 @@
 #include "JobScheduler.h"
+#include "Result.h"
 #include <iostream>
 
 using std::cout;
@@ -29,6 +30,9 @@ void JobScheduler::threadWork() {
             job = q.front();
             q.pop();
         }
+        if (q.empty()) {
+            pthread_cond_signal(&cond_empty);
+        }
 
         if (pthread_mutex_unlock(&queueLock) != 0) {
             cerr << "unlock" << endl;
@@ -38,12 +42,16 @@ void JobScheduler::threadWork() {
         if (job != nullptr) {
             job->run();
             delete job;
+            if (bar) {
+                pthread_barrier_wait(&pbar);
+                pthread_barrier_wait(&pbar2);
+            }
         } else {
             if (done)
                 return;
             else {
                 pthread_barrier_wait(&pbar);
-                bar = false;
+                pthread_barrier_wait(&pbar2);
             }
         }
     }
@@ -55,7 +63,9 @@ bool JobScheduler::init(size_t num_of_threads) {
 
     pthread_mutex_init(&queueLock, nullptr);
     pthread_cond_init(&cond_nonempty, nullptr);
+    pthread_cond_init(&cond_empty, nullptr);
     pthread_barrier_init(&pbar, nullptr, (unsigned) num_of_threads + 1);
+    pthread_barrier_init(&pbar2, nullptr, (unsigned) num_of_threads + 1);
 
     this->num_of_threads = num_of_threads;
     threads = new pthread_t[num_of_threads];
@@ -68,17 +78,33 @@ bool JobScheduler::init(size_t num_of_threads) {
 bool JobScheduler::destroy() {
     pthread_mutex_destroy(&queueLock);
     pthread_cond_destroy(&cond_nonempty);
+    pthread_cond_destroy(&cond_empty);
     pthread_barrier_destroy(&pbar);
+    pthread_barrier_destroy(&pbar2);
 
     delete[] threads;
     return true;
 }
 
 void JobScheduler::barrier() {
+    if (pthread_mutex_lock(&queueLock) != 0) {
+        cerr << "lock" << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    while (!q.empty()) {
+        pthread_cond_wait(&cond_empty, &queueLock);
+    }
     bar = true;
+    if (pthread_mutex_unlock(&queueLock) != 0) {
+        cerr << "unlock" << endl;
+        exit(EXIT_FAILURE);
+    }
+
     pthread_cond_broadcast(&cond_nonempty);
     pthread_barrier_wait(&pbar);
     bar = false;
+    pthread_barrier_wait(&pbar2);
 }
 
 int JobScheduler::schedule(Job *job) {

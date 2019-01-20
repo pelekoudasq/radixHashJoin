@@ -1,6 +1,5 @@
 #include "Result.h"
 #include "auxFun.h"
-#include "JobScheduler.h"
 
 /* This is the number of the n less significant bits */
 #define HASH_LSB 8
@@ -76,33 +75,6 @@ void Result::join_buckets(relation_info *small, relation_info *big, size_t begSm
     delete[] chain;
 }
 
-/* pass the two relations through the first hash
- * for every backet, join them
- * return the results
- */
-void Result::RadixHashJoin(relation &relR, relation &relS) {
-    size_t twoInLSB = pow2(HASH_LSB);    // 2^HASH_LSB
-
-    relation_info relRhashed;
-    relation_info relShashed;
-    relRhashed.hash_relation(relR, twoInLSB);
-    relShashed.hash_relation(relS, twoInLSB);
-
-    size_t begR = 0, begS = 0;
-    for (size_t i = 0; i < twoInLSB; i++) {
-        if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
-            if (relRhashed.histogram[i] >= relShashed.histogram[i])
-                join_buckets(&relShashed, &relRhashed, begS, begR, relShashed.histogram[i], relRhashed.histogram[i],
-                             true);
-            else
-                join_buckets(&relRhashed, &relShashed, begR, begS, relRhashed.histogram[i], relShashed.histogram[i],
-                             false);
-        }
-        begR += relRhashed.histogram[i];
-        begS += relShashed.histogram[i];
-    }
-}
-
 void Result::addAll(bucket_info *node, size_t size) {
     auto page = (key_tuple *) &node[1];
     auto s = page + size;
@@ -111,31 +83,32 @@ void Result::addAll(bucket_info *node, size_t size) {
     }
 }
 
-void Result::multiRadixHashJoin(relation &relR, relation &relS) {
+/* pass the two relations through the first hash
+ * for every backet, join them
+ * return the results
+ */
+void Result::multiRadixHashJoin(JobScheduler &js, relation &relR, relation &relS) {
     size_t twoInLSB = pow2(HASH_LSB);    // 2^HASH_LSB
 
     relation_info relRhashed;
     relation_info relShashed;
-    relRhashed.hash_relation(relR, twoInLSB);
-    relShashed.hash_relation(relS, twoInLSB);
+    relRhashed.hash_relation(js, relR, twoInLSB);
+    relShashed.hash_relation(js, relS, twoInLSB);
 
     auto res = new Result[twoInLSB];
-    JobScheduler js;
-    js.init(NUM_OF_THREADS);
+//    JobScheduler js;
+//    js.init(NUM_OF_THREADS);
 
     size_t begR = 0, begS = 0;
     for (size_t i = 0; i < twoInLSB; i++) {
         if (relRhashed.histogram[i] != 0 && relShashed.histogram[i] != 0) {
-            js.schedule(new JoinJob(res[i], &relShashed, &relRhashed, begS, begR, relShashed.histogram[i],
-                                    relRhashed.histogram[i]));
+            js.schedule(new JoinJob(res[i], &relShashed, &relRhashed, begS, begR, relShashed.histogram[i], relRhashed.histogram[i]));
         }
         begR += relRhashed.histogram[i];
         begS += relShashed.histogram[i];
     }
 
     js.barrier();
-    js.stop();
-    js.destroy();
 
     for (size_t i = 0; i < twoInLSB; i++) {
         if (!res[i].isEmpty()) {

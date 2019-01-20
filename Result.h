@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include "structs.h"
+#include "JobScheduler.h"
 
 struct key_tuple {
     uint64_t keyR;
@@ -26,9 +27,7 @@ struct Result {
 
     void addAll(bucket_info *node, size_t size);
 
-    void RadixHashJoin(relation &, relation &);
-
-    void multiRadixHashJoin(relation &relR, relation &relS);
+    void multiRadixHashJoin(JobScheduler &js, relation &relR, relation &relS);
 
     void join_buckets(relation_info *small, relation_info *big, size_t begSmall, size_t begBig, size_t histSmall,
                       size_t histBig, bool orderFlag);

@@ -46,12 +46,12 @@ struct Query {
 
     void read_projections();
 
-    void execute(std::vector<relList> &relations);
+    void execute(JobScheduler &js, std::vector<relList> &relations);
 
     void run_filters(std::vector<relList> &relations,
                      std::unordered_map<uint64_t, std::unordered_set<uint64_t> > &filtered);
 
-    void run_joins(std::vector<relList> &relations,
+    void run_joins(JobScheduler &js, std::vector<relList> &relations,
                    std::unordered_map<uint64_t, std::unordered_set<uint64_t> > &filtered);
 
     void print() const;
