@@ -33,7 +33,7 @@ relList::relList(char *filename) {
     values = new uint64_t *[num_columns];
     col_max = new uint64_t[num_columns];
     col_min = new uint64_t[num_columns];
-    distinct = new uint64_t[num_columns];
+    distinct = new uint64_t[num_columns]();
     for (size_t i = 0; i < num_columns; ++i) {
         values[i] = mapped;
         mapped += num_tuples;
@@ -53,7 +53,7 @@ relList::relList(char *filename) {
         for (size_t j = 0; j < num_tuples; j++) {
             dist[values[i][j] - min] = true;
         }
-        for (size_t j = 0; j < max - min; j++) {
+        for (size_t j = 0; j < max - min + 1; j++) {
             if (dist[j] == true) {
                 distinct[i]++;
             }
@@ -69,6 +69,18 @@ void relList::destroy() {
     delete[] distinct;
     delete[] col_min;
     delete[] col_max;
+}
+
+void relList_stats::fill(relList &relation) {
+    size = relation.num_tuples;
+    low = new size_t[relation.num_columns];
+    max = new size_t[relation.num_columns];
+    distinct = new size_t[relation.num_columns];
+    for (size_t i = 0; i < relation.num_columns; ++i) {
+        low[i] = relation.col_min[i];
+        max[i] = relation.col_max[i];
+        distinct[i] = relation.distinct[i];
+    }
 }
 
 size_t *singleHistogram(relation &rel, size_t twoInLSB) {

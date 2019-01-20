@@ -21,6 +21,15 @@ struct relList {
     void destroy();
 };
 
+struct relList_stats {
+    uint64_t size;
+    uint64_t *low;
+    uint64_t *max;
+    uint64_t *distinct;
+
+    void fill(relList &relation);
+};
+
 struct tuple {
     uint64_t key;
     uint64_t payload;

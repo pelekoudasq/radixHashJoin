@@ -1,8 +1,8 @@
 ## Ανάπτυξη Λογισμικού για Πληροφοριακά Συστήματα (Κ23α)
 
-[Ζαμπάτης Θεόδωρος](https://github.com/theo-zampatis) – 111520130045    
-[Κωστακόντη Σοφία](https://github.com/SofiaKstk) – 1115201500080  
-[Πελεκούδας Ιωάννης](https://github.com/pelekoudasq) – 1115201500128  
+1115201300045 - [Ζαμπάτης Θεόδωρος](https://github.com/theo-zampatis)  
+1115201500080 - [Κωστακόντη Σοφία](https://github.com/SofiaKstk)  
+1115201500128 - [Πελεκούδας Ιωάννης](https://github.com/pelekoudasq)  
 
 ### Τελική Αναφορά
 

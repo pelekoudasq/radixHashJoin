@@ -36,6 +36,7 @@ struct Query {
     std::vector<join_info> join;
     std::vector<filter_info> filter;
     std::vector<proj_info> proj;
+    std::vector<relList_stats> stats;
     bool filtered_out;
 
     explicit Query(int ch);
@@ -48,7 +49,7 @@ struct Query {
 
     void execute(JobScheduler &js, std::vector<relList> &relations);
 
-    void run_filters(std::vector<relList> &relations,
+    bool run_filters(std::vector<relList> &relations,
                      std::unordered_map<uint64_t, std::unordered_set<uint64_t> > &filtered);
 
     void run_joins(JobScheduler &js, std::vector<relList> &relations,

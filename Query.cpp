@@ -1,6 +1,7 @@
 #include "Query.h"
 #include "intermediate.h"
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -77,38 +78,91 @@ uint64_t column_proj(const vector<relList> &relations, uint64_t table_number, ui
  * all those that do not match the filter.
  * If a filter returned no results, return true, else false.
  */
-void Query::run_filters(vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
+bool Query::run_filters(vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
     for (uint64_t i = 0; i < table.size(); i++) {
         uint64_t table_number = table[i];
-        auto &f = filtered[i];
+        filtered[i].reserve(relations[table_number].num_tuples);
         for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
-            f.insert(j);
+            filtered[i].insert(j);
         }
+        stats[i].fill(relations[table_number]);
     }
+
     for (auto &&f : filter) {
         uint64_t table_number = table[f.table];
         uint64_t column_number = f.column;
-        for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
-            uint64_t value = relations[table_number].values[column_number][j];
-            if (f.op == '>') {
-                if (value <= f.number)
+        if (f.op == '>') {
+            if (f.number > stats[f.table].max[column_number]) {
+                return true;
+            }
+            for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
+                uint64_t value = relations[table_number].values[column_number][j];
+                if (value <= f.number) {
                     filtered[f.table].erase(j);
-            } else if (f.op == '<') {
-                if (value >= f.number)
+                }
+            }
+            if (filtered[f.table].empty()) {
+                return true;
+            }
+
+            if (stats[f.table].distinct[column_number] != 1) {
+                stats[f.table].distinct[column_number] =
+                        (stats[f.table].distinct[column_number] * (stats[f.table].max[column_number] - f.number + 1)) /
+                        (stats[f.table].max[column_number] - stats[f.table].low[column_number]);
+            }
+            stats[f.table].low[column_number] = f.number + 1;
+        } else if (f.op == '<') {
+            if (f.number < stats[f.table].low[column_number]) {
+                return true;
+            }
+            for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
+                uint64_t value = relations[table_number].values[column_number][j];
+                if (value >= f.number) {
                     filtered[f.table].erase(j);
-            } else if (f.op == '=') {
-                if (value != f.number)
+                }
+            }
+            if (filtered[f.table].empty()) {
+                return true;
+            }
+
+            if (stats[f.table].distinct[column_number] != 1)
+                stats[f.table].distinct[column_number] =
+                        (stats[f.table].distinct[column_number] * (f.number - 1 - stats[f.table].low[column_number])) /
+                        (stats[f.table].max[column_number] - stats[f.table].low[column_number]);
+            stats[f.table].max[column_number] = f.number - 1;
+        } else if (f.op == '=') {
+            for (uint64_t j = 0; j < relations[table_number].num_tuples; j++) {
+                uint64_t value = relations[table_number].values[column_number][j];
+                if (value != f.number) {
                     filtered[f.table].erase(j);
+                }
+            }
+            if (filtered[f.table].empty()) {
+                return true;
+            }
+            stats[f.table].low[column_number] = f.number;
+            stats[f.table].max[column_number] = f.number;
+            stats[f.table].distinct[column_number] = 1;
+        }
+        for (size_t i = 0; i < relations[table_number].num_columns; ++i) {
+            if (i != column_number) {
+                stats[f.table].distinct[i] = (size_t) ((double) stats[f.table].distinct[i] *
+                                           (1 - pow(1 - (double) filtered[f.table].size() / (double) stats[f.table].size,
+                                                   (double) stats[f.table].size / (double) stats[f.table].distinct[i])));
             }
         }
+        stats[f.table].size = filtered[f.table].size();
     }
+
+    return false;
 }
 
 /* If self-join, just parse table.
  * Else, make tuples into relation for join and RadixHashJoin.
  * If join is empty, stop query and sum projections.
  */
-void Query::run_joins(JobScheduler &js, vector<relList> &relations, unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
+void Query::run_joins(JobScheduler &js, vector<relList> &relations,
+                      unordered_map<uint64_t, unordered_set<uint64_t> > &filtered) {
     vector<vector<uint64_t> > intermediate(table.size());
     for (auto &&j : join) {
         if (j.table1 == j.table2) {
@@ -149,13 +203,9 @@ void Query::run_joins(JobScheduler &js, vector<relList> &relations, unordered_ma
 /* Run filters, then joins */
 void Query::execute(JobScheduler &js, vector<relList> &relations) {
     unordered_map<uint64_t, unordered_set<uint64_t> > filtered;
-    run_filters(relations, filtered);
-    filtered_out = false;
-    for (size_t i = 0; i < table.size(); i++) {
-        if (filtered[i].empty()) {
-            filtered_out = true;
-            return;
-        }
+    filtered_out = run_filters(relations, filtered);
+    if (filtered_out) {
+        return;
     }
     run_joins(js, relations, filtered);
 }
@@ -188,6 +238,7 @@ Query::Query(int ch) {
     read_relations(ch);
     read_predicates();
     read_projections();
+    stats.resize(table.size());
 }
 
 /* Constructors for info structs. */
