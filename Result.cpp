@@ -96,8 +96,6 @@ void Result::multiRadixHashJoin(JobScheduler &js, relation &relR, relation &relS
     relShashed.hash_relation(js, relS, twoInLSB);
 
     auto res = new Result[twoInLSB];
-//    JobScheduler js;
-//    js.init(NUM_OF_THREADS);
 
     size_t begR = 0, begS = 0;
     for (size_t i = 0; i < twoInLSB; i++) {

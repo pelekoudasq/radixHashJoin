@@ -31,7 +31,7 @@ int main() {
         //check if end of batch or end of file
         while (ch != 'F' && ch != EOF) {
             queries.emplace_back(ch);
-            ch = getchar();
+            ch = getchar();                     //F or first char of next query
         }
         getchar();                            //get new line
         if (!queries.empty()) {

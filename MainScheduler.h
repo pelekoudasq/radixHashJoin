@@ -5,8 +5,6 @@
 #include <queue>
 #include "Query.h"
 
-#define NUM_OF_THREADS 8
-
 /* Job for executing queries */
 class QueryJob : public Job {
     Query &query;

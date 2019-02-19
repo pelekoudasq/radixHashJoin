@@ -181,7 +181,7 @@ void Query::run_joins(JobScheduler &js, vector<relList> &relations,
                                  intermediate[j.table1]);
             relS.create_relation(j.table2, relations[table2_number], column2_number, filtered,
                                  intermediate[j.table2]);
-            //send relations to RadxHashJoin
+            //send relations to RadixHashJoin
             Result results;
             results.multiRadixHashJoin(js, relR, relS);
             //if we have no results in this join there are no results
